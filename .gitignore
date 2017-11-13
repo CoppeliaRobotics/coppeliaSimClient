@@ -1,0 +1,11 @@
+.qmake.stash
+Makefile
+Makefile.Debug
+Makefile.Release
+*.o
+debug
+release
+vrep
+vrep.exe
+vrep.app
+*.user
