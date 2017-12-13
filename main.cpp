@@ -55,19 +55,19 @@ int loadPlugin(const char* theName,const char* theDirAndName)
     int pluginHandle=simLoadModule(theDirAndName,theName);
     if (pluginHandle==-3)
     #ifdef WIN_VREP
-        std::cout << "Plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. Try rebuilding the plugin.\n";
+        std::cout << "Error with plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. Try rebuilding the plugin.\n";
     #endif
     #ifdef MAC_VREP
-        std::cout << "Plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. Try 'otool -L pluginName.dylib' for more infos, or simply rebuild the plugin.\n";
+        std::cout << "Error with plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. Try 'otool -L pluginName.dylib' for more infos, or simply rebuild the plugin.\n";
     #endif
     #ifdef LIN_VREP
-        std::cout << "Plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. For additional infos, modify the script 'libLoadErrorCheck.sh', run it and inspect the output.\n";
+        std::cout << "Error with plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. For additional infos, modify the script 'libLoadErrorCheck.sh', run it and inspect the output.\n";
     #endif
 
     if (pluginHandle==-2)
-        std::cout << "Plugin '" << theName << "': load failed (missing entry points).\n";
+        std::cout << "Error with plugin '" << theName << "': load failed (missing entry points).\n";
     if (pluginHandle==-1)
-        std::cout << "Plugin '" << theName << "': load failed (failed initialization).\n";
+        std::cout << "Error with plugin '" << theName << "': load failed (failed initialization).\n";
     if (pluginHandle>=0)
         std::cout << "Plugin '" << theName << "': load succeeded.\n";
     return(pluginHandle);
