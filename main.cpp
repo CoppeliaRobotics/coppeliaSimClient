@@ -272,13 +272,10 @@ void simulatorLoop()
             }
         }
     }
-    else
+    if ( (simGetSimulationState()==sim_simulation_stopped)&&wasRunning&&autoQuit )
     {
-        if (wasRunning&&autoQuit)
-        {
-            wasRunning=false;
-            simQuitSimulator(true); // will post the quit command
-        }
+        wasRunning=false;
+        simQuitSimulator(true); // will post the quit command
     }
 }
 
