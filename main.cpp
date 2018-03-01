@@ -298,7 +298,6 @@ int main(int argc, char* argv[])
         _fullpath(basePath,argv[0],sizeof(basePath));
         std::string p(basePath);
         p.erase(p.begin()+p.find_last_of('\\')+1,p.end());
-        printf(p.c_str());
         QDir::setCurrent(p.c_str());
     #endif
 
