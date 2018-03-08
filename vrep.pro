@@ -37,6 +37,7 @@ INCLUDEPATH += "../include"
 win32 {
     DEFINES += WIN_VREP
     LIBS += -lwinmm
+#    RC_ICONS += v_rep.ico
 }
 
 macx {
