@@ -1,4 +1,6 @@
-TEMPLATE    = app
+include(config.pri)
+
+TEMPLATE      = app
 TARGET        = vrep
 CONFIG        += console debug_and_release
 CONFIG        += app_bundle
@@ -46,14 +48,8 @@ macx {
 
 # Following required to have Lua extension libraries work under LINUX. Very strange indeed.
 unix:!macx {
-        contains(QMAKE_HOST.arch, x86_64):{ # 64 Bit
-                INCLUDEPATH += "/usr/include/lua5.1"
-                LIBS += -Llua5_1_4_Linux26g4_64_lib/ -llua5.1
-        }
-        !contains(QMAKE_HOST.arch, x86_64):{ # 32 Bit
-                INCLUDEPATH += "/usr/include/lua5.1"
-                LIBS += -Llua5_1_4_Linux26g4_lib/ -llua5.1
-        }
+    INCLUDEPATH += $$LUA_INCLUDEPATH
+    LIBS += $$LUA_LIBS
     DEFINES += LIN_VREP
 }
 
