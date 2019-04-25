@@ -43,12 +43,13 @@
     }
 #endif
 
-std::vector<int> pluginHandles;
-std::string sceneOrModelOrUiToLoad;
-bool autoStart=false;
-int simStopDelay=0;
-bool autoQuit=false;
+int stopDelay;
+int options;
+std::string sceneOrModelToLoad;
 
+simVoid(*simulatorInit)()=nullptr; // use default initialization callback routine
+/* You may provide your own initialization callback routine, e.g.:
+std::vector<int> pluginHandles;
 int loadPlugin(const char* theName,const char* theDirAndName)
 {
     std::cout << "Plugin '" << theName << "': loading...\n";
@@ -76,10 +77,8 @@ int loadPlugin(const char* theName,const char* theDirAndName)
 void simulatorInit()
 {
     std::cout << "Simulator launched.\n";
-
     std::vector<std::string> theNames;
     std::vector<std::string> theDirAndNames;
-
 #ifdef SIM_WITHOUT_QT_AT_ALL
     char curDirAndFile[2048];
     #ifdef WIN_VREP
@@ -181,9 +180,9 @@ void simulatorInit()
 #endif // SIM_WITHOUT_QT_AT_ALL
 
     // Load the system plugins first:
-    for (int i=0;i<int(theNames.size());i++)
+    for (size_t i=0;i<theNames.size();i++)
     {
-        if ((theNames[i].compare("MeshCalc")==0)||(theNames[i].compare("Dynamics")==0)||(theNames[i].compare("PathPlanning")==0))
+        if ( (theNames[i].compare("MeshCalc")==0)||(theNames[i].compare("Dynamics")==0) )
         {
             int pluginHandle=loadPlugin(theNames[i].c_str(),theDirAndNames[i].c_str());
             if (pluginHandle>=0)
@@ -194,7 +193,7 @@ void simulatorInit()
     simLoadModule("",""); // indicate that we are done with the system plugins
 
     // Now load the other plugins too:
-    for (int i=0;i<int(theNames.size());i++)
+    for (size_t i=0;i<theNames.size();i++)
     {
         if (theDirAndNames[i].compare("")!=0)
         { // not yet loaded
@@ -204,42 +203,52 @@ void simulatorInit()
         }
     }
 
-    if (sceneOrModelOrUiToLoad.length()!=0)
+    if (sceneOrModelToLoad.length()!=0)
     { // Here we double-clicked a V-REP file or dragged-and-dropped it onto this application
-        int l=int(sceneOrModelOrUiToLoad.length());
-        if ((l>4)&&(sceneOrModelOrUiToLoad[l-4]=='.')&&(sceneOrModelOrUiToLoad[l-3]=='t')&&(sceneOrModelOrUiToLoad[l-2]=='t'))
+        int l=int(sceneOrModelToLoad.length());
+        if ((l>4)&&(sceneOrModelToLoad[l-4]=='.')&&(sceneOrModelToLoad[l-3]=='t')&&(sceneOrModelToLoad[l-2]=='t'))
         {
             simSetBooleanParameter(sim_boolparam_scene_and_model_load_messages,1);
-            if (sceneOrModelOrUiToLoad[l-1]=='t') // trying to load a scene?
+            if (sceneOrModelToLoad[l-1]=='t') // trying to load a scene?
             {
-                if (simLoadScene(sceneOrModelOrUiToLoad.c_str())==-1)
+                if (simLoadScene(sceneOrModelToLoad.c_str())==-1)
                     simAddStatusbarMessage("Scene could not be opened.");
             }
-            if (sceneOrModelOrUiToLoad[l-1]=='m') // trying to load a model?
+            if (sceneOrModelToLoad[l-1]=='m') // trying to load a model?
             {
-                if (simLoadModel(sceneOrModelOrUiToLoad.c_str())==-1)
+                if (simLoadModel(sceneOrModelToLoad.c_str())==-1)
                     simAddStatusbarMessage("Model could not be loaded.");
-            }
-            if (sceneOrModelOrUiToLoad[l-1]=='b') // trying to load a UI?
-            {
-                if (simLoadUI(sceneOrModelOrUiToLoad.c_str(),0,NULL)==-1)
-                    simAddStatusbarMessage("UI could not be loaded.");
             }
             simSetBooleanParameter(sim_boolparam_scene_and_model_load_messages,0);
         }
     }
 }
+*/
 
+simVoid(*simulatorDeinit)()=nullptr; // use default deinitialization callback routine
+/* You may provide your own deinitialization callback routine, e.g.:
+void simulatorDeinit()
+{
+    // Unload all plugins:
+    for (size_t i=0;i<pluginHandles.size();i++)
+        simUnloadModule(pluginHandles[i]);
+    pluginHandles.clear();
+    std::cout << "Simulator ended.\n";
+}
+*/
+
+simVoid(*simulatorLoop)()=nullptr; // use default simulation loop callback routine
+/* You may provide your own simulation loop callback routine, e.g.:
 void simulatorLoop()
 {   // The main application loop (excluding the GUI part)
     static bool wasRunning=false;
     int auxValues[4];
     int messageID=0;
     int dataSize;
-    if (autoStart)
+    if (options&sim_autostart)
     {
         simStartSimulation();
-        autoStart=false;
+        options-=sim_autostart;
     }
     while (messageID!=-1)
     {
@@ -265,28 +274,20 @@ void simulatorLoop()
         {
             if ((simHandleMainScript()&sim_script_main_script_not_called)==0)
                 simAdvanceSimulationByOneStep();
-            if ((simStopDelay>0)&&(simGetSimulationTime()>=float(simStopDelay)/1000.0f))
+            if ((stopDelay>0)&&(simGetSimulationTime()>=float(stopDelay)/1000.0f))
             {
-                simStopDelay=0;
+                stopDelay=0;
                 simStopSimulation();
             }
         }
     }
-    if ( (simGetSimulationState()==sim_simulation_stopped)&&wasRunning&&autoQuit )
+    if ( (simGetSimulationState()==sim_simulation_stopped)&&wasRunning&&((options&sim_autoquit)!=0) )
     {
         wasRunning=false;
         simQuitSimulator(true); // will post the quit command
     }
 }
-
-void simulatorDeinit()
-{
-    // Unload all plugins:
-    for (int i=0;i<int(pluginHandles.size());i++)
-        simUnloadModule(pluginHandles[i]);
-    pluginHandles.clear();
-    std::cout << "Simulator ended.\n";
-}
+*/
 
 int main(int argc, char* argv[])
 {
@@ -338,7 +339,8 @@ int main(int argc, char* argv[])
     {
         if (getVrepProcAddresses(lib)!=0)
         {
-            int guiItems=sim_gui_all;
+            options=sim_gui_all;
+            stopDelay=0;
             for (int i=1;i<argc;i++)
             {
                 std::string arg(argv[i]);
@@ -347,27 +349,30 @@ int main(int argc, char* argv[])
                     if (arg.length()>=2)
                     {
                         if (arg[1]=='h')
-                            guiItems=sim_gui_headless;
+                        {
+                            options|=sim_gui_all|sim_gui_headless;
+                            options-=sim_gui_all;
+                        }
                         if (arg[1]=='s')
                         {
-                            autoStart=true;
-                            simStopDelay=0;
+                            options|=sim_autostart;
+                            stopDelay=0;
                             unsigned int p=2;
                             while (arg.length()>p)
                             {
-                                simStopDelay*=10;
+                                stopDelay*=10;
                                 if ((arg[p]>='0')&&(arg[p]<='9'))
-                                    simStopDelay+=arg[p]-'0';
+                                    stopDelay+=arg[p]-'0';
                                 else
                                 {
-                                    simStopDelay=0;
+                                    stopDelay=0;
                                     break;
                                 }
                                 p++;
                             }
                         }
                         if (arg[1]=='q')
-                            autoQuit=true;
+                            options|=sim_autoquit;
                         if ((arg[1]=='a')&&(arg.length()>2))
                         {
                             std::string tmp;
@@ -393,12 +398,12 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    if (sceneOrModelOrUiToLoad.length()==0)
-                        sceneOrModelOrUiToLoad=arg;
+                    if (sceneOrModelToLoad.length()==0)
+                        sceneOrModelToLoad=arg;
                 }
             }
 
-            if (simRunSimulator("V-REP",guiItems,simulatorInit,simulatorLoop,simulatorDeinit)!=1)
+            if (simRunSimulator("V-REP",options,simulatorInit,simulatorLoop,simulatorDeinit,stopDelay,sceneOrModelToLoad.c_str())!=1)
                 std::cout << "Failed initializing and running V-REP\n";
             else
                 wasRunning=true;
