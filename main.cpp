@@ -1,32 +1,28 @@
 #ifdef WIN_VREP
     #include <direct.h>
     #include <Windows.h>
-#endif
-#ifdef LIN_VREP
+    #include <process.h>
+    #define THREAD_RET_TYPE void
+    #define THREAD_RET_VAL void()
+#else
     #include <unistd.h>
+    #include <pthread.h>
+    #define THREAD_RET_TYPE void*
+    #define THREAD_RET_VAL 0
 #endif
-
-#include "v_repLib.h"
-#include <vector>
-#include <iostream>
 
 #ifdef SIM_WITHOUT_QT_AT_ALL
     #include <algorithm>
     #ifdef WIN_VREP
         #include "_dirent.h"
     #else
-        #include <unistd.h>
         #include <dirent.h>
-        #include <stdio.h>
     #endif
 #else
     #include <QtCore/QCoreApplication>
     #include <QLibrary>
     #include <QFileInfo>
     #include <QDir>
-    #ifndef WIN_VREP
-        #include <unistd.h>
-    #endif
 #endif
 
 // Following required to have Lua extension libraries work under Linux. Strange...
@@ -43,6 +39,11 @@
     }
 #endif
 
+#include "v_repLib.h"
+#include <vector>
+#include <iostream>
+
+LIBRARY vrepLib=nullptr;
 int stopDelay;
 int options;
 std::string sceneOrModelToLoad;
@@ -289,31 +290,29 @@ void simulatorLoop()
 }
 */
 
-int main(int argc, char* argv[])
+int loadVrepLib(const char* execPath,std::string& appDir)
 {
+    std::cout << "Loading the V-REP library...\n";
     #ifdef WIN_VREP
-        timeBeginPeriod(1);
-
         // Set the current path same as the application path
         char basePath[2048];
-        _fullpath(basePath,argv[0],sizeof(basePath));
+        _fullpath(basePath,execPath,sizeof(basePath));
         std::string p(basePath);
         p.erase(p.begin()+p.find_last_of('\\')+1,p.end());
         QDir::setCurrent(p.c_str());
     #endif
-
-    std::string libLoc(argv[0]);
-    while ((libLoc.length()>0)&&(libLoc[libLoc.length()-1]))
+    appDir=execPath;
+    while ((appDir.length()>0)&&(appDir[appDir.length()-1]))
     {
-        int l=(int)libLoc.length();
-        if (libLoc[l-1]!='/')
-            libLoc.erase(libLoc.end()-1);
+        int l=(int)appDir.length();
+        if (appDir[l-1]!='/')
+            appDir.erase(appDir.end()-1);
         else
         { // we might have a 2 byte char:
             if (l>1)
             {
-                if (libLoc[l-2]>0x7F)
-                    libLoc.erase(libLoc.end()-1);
+                if (appDir[l-2]>0x7F)
+                    appDir.erase(appDir.end()-1);
                 else
                     break;
 
@@ -322,103 +321,161 @@ int main(int argc, char* argv[])
                 break;
         }
     }
-    chdir(libLoc.c_str());
-
+    chdir(appDir.c_str());
     #ifdef WIN_VREP
-        LIBRARY lib=loadVrepLibrary("v_rep");
+        vrepLib=loadVrepLibrary("v_rep");
     #endif
     #ifdef MAC_VREP
-        LIBRARY lib=loadVrepLibrary("libv_rep.dylib");
+        vrepLib=loadVrepLibrary("libv_rep.dylib");
     #endif
     #ifdef LIN_VREP
-        LIBRARY lib=loadVrepLibrary("libv_rep.so");
+        vrepLib=loadVrepLibrary("libv_rep.so");
     #endif
-
-    bool wasRunning=false;
-    if (lib!=NULL)
+    if (vrepLib!=NULL)
     {
-        if (getVrepProcAddresses(lib)!=0)
+        if (getVrepProcAddresses(vrepLib)!=0)
         {
-            options=sim_gui_all;
-            stopDelay=0;
-            for (int i=1;i<argc;i++)
+            std::cout << "Done!\n";
+            return(1);
+        }
+        std::cout << "Error: could not find all required functions in the V-REP library\n";
+        return(0);
+    }
+    std::cout << "Error: could not find or correctly load the V-REP library\n";
+    return(-1);
+}
+
+void unloadVrepLib()
+{
+    std::cout << "Unloading the V-REP library...\n";
+    unloadVrepLibrary(vrepLib);
+    std::cout << "Done!\n";
+}
+
+bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
+{
+    options=sim_gui_all;
+    stopDelay=0;
+    for (int i=1;i<argc;i++)
+    {
+        std::string arg(argv[i]);
+        if (arg[0]=='-')
+        {
+            if (arg.length()>=2)
             {
-                std::string arg(argv[i]);
-                if (arg[0]=='-')
+                if (arg[1]=='h')
                 {
-                    if (arg.length()>=2)
+                    options|=sim_gui_all|sim_gui_headless;
+                    options-=sim_gui_all;
+                }
+                if (arg[1]=='s')
+                {
+                    options|=sim_autostart;
+                    stopDelay=0;
+                    unsigned int p=2;
+                    while (arg.length()>p)
                     {
-                        if (arg[1]=='h')
+                        stopDelay*=10;
+                        if ((arg[p]>='0')&&(arg[p]<='9'))
+                            stopDelay+=arg[p]-'0';
+                        else
                         {
-                            options|=sim_gui_all|sim_gui_headless;
-                            options-=sim_gui_all;
-                        }
-                        if (arg[1]=='s')
-                        {
-                            options|=sim_autostart;
                             stopDelay=0;
-                            unsigned int p=2;
-                            while (arg.length()>p)
-                            {
-                                stopDelay*=10;
-                                if ((arg[p]>='0')&&(arg[p]<='9'))
-                                    stopDelay+=arg[p]-'0';
-                                else
-                                {
-                                    stopDelay=0;
-                                    break;
-                                }
-                                p++;
-                            }
+                            break;
                         }
-                        if (arg[1]=='q')
-                            options|=sim_autoquit;
-                        if ((arg[1]=='a')&&(arg.length()>2))
-                        {
-                            std::string tmp;
-                            tmp.assign(arg.begin()+2,arg.end());
-                            simSetStringParameter(sim_stringparam_additional_addonscript_firstscene,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
-                        }
-                        if ((arg[1]=='b')&&(arg.length()>2))
-                        {
-                            std::string tmp;
-                            tmp.assign(arg.begin()+2,arg.end());
-                            simSetStringParameter(sim_stringparam_additional_addonscript,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
-                        }
-                        if ((arg[1]=='g')&&(arg.length()>2))
-                        {
-                            static int cnt=0;
-                            std::string tmp;
-                            tmp.assign(arg.begin()+2,arg.end());
-                            if (cnt<9)
-                                simSetStringParameter(sim_stringparam_app_arg1+cnt,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
-                            cnt++;
-                        }
+                        p++;
                     }
                 }
-                else
+                if (arg[1]=='q')
+                    options|=sim_autoquit;
+                if ((arg[1]=='a')&&(arg.length()>2))
                 {
-                    if (sceneOrModelToLoad.length()==0)
-                        sceneOrModelToLoad=arg;
+                    std::string tmp;
+                    tmp.assign(arg.begin()+2,arg.end());
+                    simSetStringParameter(sim_stringparam_additional_addonscript_firstscene,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+                }
+                if ((arg[1]=='b')&&(arg.length()>2))
+                {
+                    std::string tmp;
+                    tmp.assign(arg.begin()+2,arg.end());
+                    simSetStringParameter(sim_stringparam_additional_addonscript,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+                }
+                if ((arg[1]=='g')&&(arg.length()>2))
+                {
+                    static int cnt=0;
+                    std::string tmp;
+                    tmp.assign(arg.begin()+2,arg.end());
+                    if (cnt<9)
+                        simSetStringParameter(sim_stringparam_app_arg1+cnt,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+                    cnt++;
                 }
             }
+        }
+        else
+        {
+            if (sceneOrModelToLoad.length()==0)
+                sceneOrModelToLoad=arg;
+        }
+    }
 
-            if (simRunSimulator("V-REP",options,simulatorInit,simulatorLoop,simulatorDeinit,stopDelay,sceneOrModelToLoad.c_str())!=1)
-                std::cout << "Failed initializing and running V-REP\n";
-            else
+    std::cout << "Launching V-REP...\n";
+    if (!uiOnly)
+    {
+        if (simRunSimulator("V-REP",options,simulatorInit,simulatorLoop,simulatorDeinit,stopDelay,sceneOrModelToLoad.c_str())==1)
+            return(true);
+    }
+    else
+    {
+        if (simExtLaunchUIThread("V-REP",options,sceneOrModelToLoad.c_str(),appDir)==1)
+            return(true);
+    }
+    std::cout << "Error: failed launching V-REP\n";
+    return(false);
+}
+
+THREAD_RET_TYPE simThreadStartAddress(void*)
+{
+    while (!simExtCanInitSimThread());
+    simExtSimThreadInit();
+    while (!simExtGetExitRequest())
+        simExtStep(true);
+    simExtSimThreadDestroy();
+    return(THREAD_RET_VAL);
+}
+
+int main(int argc,char* argv[])
+{
+    bool launchAndHandleSimThreadHere=false;
+    bool wasRunning=false;
+    #ifdef WIN_VREP
+        timeBeginPeriod(1);
+    #endif
+    std::string appDir;
+    int res=loadVrepLib(argv[0],appDir);
+    if (res==1)
+    {
+        if (!launchAndHandleSimThreadHere)
+        {
+            if (run(argc,argv,appDir.c_str(),false))
                 wasRunning=true;
         }
         else
-            std::cout << "Error: could not find all required functions in the V-REP library\n";
-        unloadVrepLibrary(lib);
+        {
+            #ifdef WIN_VREP
+                _beginthread(simThreadStartAddress,0,0);
+            #else
+                pthread_t th;
+                pthread_create(&th,nullptr,simThreadStartAddress,nullptr);
+            #endif
+            if (run(argc,argv,appDir.c_str(),true))
+                wasRunning=true;
+        }
     }
-    else
-        printf("Error: could not find or correctly load the V-REP library\n");
-
+    if (res>=0)
+        unloadVrepLib();
     #ifdef WIN_VREP
         timeEndPeriod(1);
     #endif
-
     if (!wasRunning)
         getchar();
     return(0);
