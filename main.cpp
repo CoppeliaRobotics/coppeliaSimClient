@@ -421,7 +421,7 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
     std::cout << "Launching V-REP...\n";
     if (!uiOnly)
     {
-        if (simRunSimulator("V-REP",options,simulatorInit,simulatorLoop,simulatorDeinit,stopDelay,sceneOrModelToLoad.c_str())==1)
+        if (simRunSimulatorEx("V-REP",options,simulatorInit,simulatorLoop,simulatorDeinit,stopDelay,sceneOrModelToLoad.c_str())==1)
             return(true);
     }
     else
