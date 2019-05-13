@@ -6,8 +6,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_MACOSX_RPATH 1)
 
 set(WITH_QT true CACHE BOOL "Enable Qt")
-set(VREP_LIBRARY NOTFOUND CACHE STRING "Path to the compiled V-REP dll/so/dylib file")
-set(QSCINTILLA_LIBRARY NOTFOUND CACHE STRING "Path to the QScintilla dll/so/dylib file")
+set(VREP_LIBRARY NOTFOUND CACHE PATH "Path to the compiled V-REP dll/so/dylib file")
 
 if(WITH_QT)
     add_definitions(-DQT_FRAMEWORK)
