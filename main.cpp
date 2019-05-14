@@ -409,6 +409,16 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
                         simSetStringParameter(sim_stringparam_app_arg1+cnt,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
                     cnt++;
                 }
+                if ((arg[1]=='G')&&(arg.length()>3))
+                {
+                    size_t pos=arg.find('=',3);
+                    if ( (pos!=std::string::npos)&&(pos!=arg.length()-1) )
+                    {
+                        std::string key(arg.begin()+2,arg.begin()+pos);
+                        std::string param(arg.begin()+pos+1,arg.end());
+                        simSetStringNamedParam(key.c_str(),param.c_str(),int(param.size()));
+                    }
+                }
             }
         }
         else
