@@ -1,7 +1,7 @@
 include(config.pri)
 
 TEMPLATE      = app
-TARGET        = vrep
+TARGET        = coppeliaSim
 CONFIG        += console debug_and_release
 CONFIG        += app_bundle
 CONFIG        += WITH_QT
@@ -37,26 +37,26 @@ WITH_QT {
 INCLUDEPATH += "../include"
 
 win32 {
-    DEFINES += WIN_VREP
+    DEFINES += WIN_SIM
     LIBS += -lwinmm
-#    RC_ICONS += v_rep.ico
+#    RC_ICONS += coppeliaSim.ico
 }
 
 macx {
-    DEFINES += MAC_VREP
+    DEFINES += MAC_SIM
 }
 
 # Following required to have Lua extension libraries work under LINUX. Very strange indeed.
 unix:!macx {
     INCLUDEPATH += $$LUA_INCLUDEPATH
     LIBS += $$LUA_LIBS
-    DEFINES += LIN_VREP
+    DEFINES += LIN_SIM
 }
 
 SOURCES += main.cpp \
-    ../common/v_repLib.cpp
+    ../common/simLib.cpp
 
-HEADERS += ../include/v_repLib.h
+HEADERS += ../include/simLib.h
 
 
 

@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 2.8.11)
-project(v_repClientApplication)
+project(simClientApplication)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_MACOSX_RPATH 1)
 
 set(WITH_QT true CACHE BOOL "Enable Qt")
-set(VREP_LIBRARY NOTFOUND CACHE PATH "Path to the compiled V-REP dll/so/dylib file")
+set(COPPELIASIM_LIBRARY NOTFOUND CACHE PATH "Path to the compiled CoppeliaSim dll/so/dylib file")
 
 if(WITH_QT)
     add_definitions(-DQT_FRAMEWORK)
@@ -29,36 +29,36 @@ include_directories("../include")
 include_directories(${LUA_INCLUDE_DIR})
 
 if(WIN32)
-    add_definitions(-DWIN_VREP)
+    add_definitions(-DWIN_SIM)
 elseif(APPLE)
-    add_definitions(-DMAC_VREP)
+    add_definitions(-DMAC_SIM)
 elseif(UNIX)
-    add_definitions(-DLIN_VREP)
+    add_definitions(-DLIN_SIM)
 endif()
 
-set(SOURCES main.cpp ../common/v_repLib.cpp)
+set(SOURCES main.cpp ../common/simLib.cpp)
 if(APPLE)
-    add_executable(vrep MACOSX_BUNDLE ${SOURCES})
+    add_executable(coppeliaSim MACOSX_BUNDLE ${SOURCES})
 else()
-    add_executable(vrep ${SOURCES})
+    add_executable(coppeliaSim ${SOURCES})
 endif()
-target_link_libraries(vrep ${LUA_LIBRARIES})
+target_link_libraries(coppeliaSim ${LUA_LIBRARIES})
 if(WITH_QT)
-    target_link_libraries(vrep Qt5::Core)
+    target_link_libraries(coppeliaSim Qt5::Core)
 endif()
 if(WIN32)
-    target_link_libraries(vrep -lwinmm)
+    target_link_libraries(coppeliaSim -lwinmm)
 endif()
 
-if(NOT VREP_LIBRARY)
-    message(FATAL_ERROR "VREP_LIBRARY is not set")
-elseif(NOT EXISTS "${VREP_LIBRARY}")
-    message(FATAL_ERROR "VREP_LIBRARY is not a valid file (${VREP_LIBRARY})")
+if(NOT COPPELIASIM_LIBRARY)
+    message(FATAL_ERROR "COPPELIASIM_LIBRARY is not set")
+elseif(NOT EXISTS "${COPPELIASIM_LIBRARY}")
+    message(FATAL_ERROR "COPPELIASIM_LIBRARY is not a valid file (${COPPELIASIM_LIBRARY})")
 else()
-    add_custom_command(TARGET vrep POST_BUILD
+    add_custom_command(TARGET coppeliaSim POST_BUILD
         COMMAND "${CMAKE_COMMAND}" -E
-        copy "${VREP_LIBRARY}" "$<TARGET_FILE_DIR:vrep>"
-        COMMENT "Copying libv_rep in place..."
+        copy "${COPPELIASIM_LIBRARY}" "$<TARGET_FILE_DIR:coppeliaSim>"
+        COMMENT "Copying libcoppeliaSim in place..."
     )
 endif()
 
@@ -72,17 +72,17 @@ if(WITH_QT)
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${QT_BIN_DIR}")
     find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${QT_BIN_DIR}")
     if(WIN32)
-        add_custom_command(TARGET vrep POST_BUILD
+        add_custom_command(TARGET coppeliaSim POST_BUILD
             COMMAND "${CMAKE_COMMAND}" -E
                 env PATH="${QT_BIN_DIR}" "${WINDEPLOYQT_EXECUTABLE}"
-                "$<TARGET_FILE:vrep>"
+                "$<TARGET_FILE:coppeliaSim>"
             COMMENT "Running windeployqt..."
         )
     endif()
     if(APPLE)
-        add_custom_command(TARGET vrep POST_BUILD
+        add_custom_command(TARGET coppeliaSim POST_BUILD
             COMMAND "${MACDEPLOYQT_EXECUTABLE}"
-                "$<TARGET_FILE_DIR:vrep>/../.."
+                "$<TARGET_FILE_DIR:coppeliaSim>/../.."
                 -always-overwrite
             COMMENT "Running macdeployqt..."
         )

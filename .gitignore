@@ -6,6 +6,6 @@ Makefile.Release
 debug
 release
 vrep
-vrep.exe
-vrep.app
+coppeliaSim.exe
+coppeliaSim.app
 *.user

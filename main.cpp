@@ -1,4 +1,4 @@
-#ifdef WIN_VREP
+#ifdef WIN_SIM
     #include <direct.h>
     #include <Windows.h>
     #include <process.h>
@@ -13,7 +13,7 @@
 
 #ifdef SIM_WITHOUT_QT_AT_ALL
     #include <algorithm>
-    #ifdef WIN_VREP
+    #ifdef WIN_SIM
         #include "_dirent.h"
     #else
         #include <dirent.h>
@@ -26,7 +26,7 @@
 #endif
 
 // Following required to have Lua extension libraries work under Linux. Strange...
-#ifdef LIN_VREP
+#ifdef LIN_SIM
     extern "C" {
         #include "lua.h"
         #include "lualib.h"
@@ -39,11 +39,11 @@
     }
 #endif
 
-#include "v_repLib.h"
+#include "simLib.h"
 #include <vector>
 #include <iostream>
 
-LIBRARY vrepLib=nullptr;
+LIBRARY simLib=nullptr;
 int stopDelay;
 int options;
 std::string sceneOrModelToLoad;
@@ -56,13 +56,13 @@ int loadPlugin(const char* theName,const char* theDirAndName)
     std::cout << "Plugin '" << theName << "': loading...\n";
     int pluginHandle=simLoadModule(theDirAndName,theName);
     if (pluginHandle==-3)
-    #ifdef WIN_VREP
+    #ifdef WIN_SIM
         std::cout << "Error with plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. Try rebuilding the plugin.\n";
     #endif
-    #ifdef MAC_VREP
+    #ifdef MAC_SIM
         std::cout << "Error with plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. Try 'otool -L pluginName.dylib' for more infos, or simply rebuild the plugin.\n";
     #endif
-    #ifdef LIN_VREP
+    #ifdef LIN_SIM
         std::cout << "Error with plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. For additional infos, modify the script 'libLoadErrorCheck.sh', run it and inspect the output.\n";
     #endif
 
@@ -82,7 +82,7 @@ void simulatorInit()
     std::vector<std::string> theDirAndNames;
 #ifdef SIM_WITHOUT_QT_AT_ALL
     char curDirAndFile[2048];
-    #ifdef WIN_VREP
+    #ifdef WIN_SIM
         GetModuleFileNameA(NULL,curDirAndFile,2000);
         int i=0;
         while (true)
@@ -115,26 +115,24 @@ void simulatorInit()
                 std::transform(nm.begin(),nm.end(),nm.begin(),::tolower);
                 int pre=0;
                 int po=0;
-                #ifdef WIN_VREP
-                    pre=8;
-                    po=4;
-                    if ( (nm.compare(0,8,"v_repext")==0)&&(nm.compare(nm.size()-4,4,".dll")==0) )
+                #ifdef WIN_SIM
+                if ( boost::algorithm::starts_with(nm,"simext")&&boost::algorithm::ends_with(nm,".dll") )
+                    pre=6;po=4;
                 #endif
-                #ifdef LIN_VREP
-                    pre=11;
-                    po=3;
-                    if ( (nm.compare(0,11,"libv_repext")==0)&&(nm.compare(nm.size()-3,3,".so")==0) )
+                #ifdef LIN_SIM
+                if ( boost::algorithm::starts_with(nm,"libsimext")&&boost::algorithm::ends_with(nm,".so") )
+                    pre=9;po=3;
                 #endif
-                #ifdef MAC_VREP
-                    pre=11;
-                    po=6;
-                    if ( (nm.compare(0,11,"libv_repext")==0)&&(nm.compare(nm.size()-6,6,".dylib")==0) )
+                #ifdef MAC_SIM
+                if ( boost::algorithm::starts_with(nm,"libsimext")&&boost::algorithm::ends_with(nm,".dylib") )
+                    pre=9;po=6;
                 #endif
+                if (pre!=0)
                 {
-                    if (nm.find('_',6)==std::string::npos)
+                    nm=ent->d_name;
+                    nm.assign(nm.begin()+pre,nm.end()-po);
+                    if (nm.find('_')==std::string::npos)
                     {
-                        nm=ent->d_name;
-                        nm.assign(nm.begin()+pre,nm.end()-po);
                         theNames.push_back(nm);
                         theDirAndNames.push_back(theDir+'/'+ent->d_name);
                     }
@@ -148,20 +146,20 @@ void simulatorInit()
     QFileInfo pathInfo(QCoreApplication::applicationFilePath());
     std::string pa=pathInfo.path().toStdString();
     QDir dir(pa.c_str());
-    dir.setFilter(QDir::Files|QDir::Hidden); // |QDir::NoSymLinks); // removed on 11/4/2013 thanks to Karl Robillard
+    dir.setFilter(QDir::Files|QDir::Hidden);
     dir.setSorting(QDir::Name);
     QStringList filters;
-    int bnl=8;
-    #ifdef WIN_VREP
-        std::string tmp("v_repExt*.dll");
+    int bnl=6;
+    #ifdef WIN_SIM
+        std::string tmp("simExt*.dll");
     #endif
-    #ifdef MAC_VREP
-        std::string tmp("libv_repExt*.dylib");
-        bnl=11;
+    #ifdef MAC_SIM
+        std::string tmp("libsimExt*.dylib");
+        bnl=9;
     #endif
-    #ifdef LIN_VREP
-        std::string tmp("libv_repExt*.so");
-        bnl=11;
+    #ifdef LIN_SIM
+        std::string tmp("libsimExt*.so");
+        bnl=9;
     #endif
     filters << tmp.c_str();
     dir.setNameFilters(filters);
@@ -205,7 +203,7 @@ void simulatorInit()
     }
 
     if (sceneOrModelToLoad.length()!=0)
-    { // Here we double-clicked a V-REP file or dragged-and-dropped it onto this application
+    { // Here we double-clicked a CoppeliaSim file or dragged-and-dropped it onto this application
         int l=int(sceneOrModelToLoad.length());
         if ((l>4)&&(sceneOrModelToLoad[l-4]=='.')&&(sceneOrModelToLoad[l-3]=='t')&&(sceneOrModelToLoad[l-2]=='t'))
         {
@@ -290,10 +288,10 @@ void simulatorLoop()
 }
 */
 
-int loadVrepLib(const char* execPath,std::string& appDir)
+int loadSimLib(const char* execPath,std::string& appDir)
 {
-    std::cout << "Loading the V-REP library...\n";
-    #ifdef WIN_VREP
+    std::cout << "Loading the CoppeliaSim library...\n";
+    #ifdef WIN_SIM
         // Set the current path same as the application path
         char basePath[2048];
         _fullpath(basePath,execPath,sizeof(basePath));
@@ -322,33 +320,33 @@ int loadVrepLib(const char* execPath,std::string& appDir)
         }
     }
     chdir(appDir.c_str());
-    #ifdef WIN_VREP
-        vrepLib=loadVrepLibrary("v_rep");
+    #ifdef WIN_SIM
+        simLib=loadSimLibrary("coppeliaSim");
     #endif
-    #ifdef MAC_VREP
-        vrepLib=loadVrepLibrary("libv_rep.dylib");
+    #ifdef MAC_SIM
+        simLib=loadSimLibrary("libcoppeliaSim.dylib");
     #endif
-    #ifdef LIN_VREP
-        vrepLib=loadVrepLibrary("libv_rep.so");
+    #ifdef LIN_SIM
+        simLib=loadSimLibrary("libcoppeliaSim.so");
     #endif
-    if (vrepLib!=NULL)
+    if (simLib!=NULL)
     {
-        if (getVrepProcAddresses(vrepLib)!=0)
+        if (getSimProcAddresses(simLib)!=0)
         {
             std::cout << "Done!\n";
             return(1);
         }
-        std::cout << "Error: could not find all required functions in the V-REP library\n";
+        std::cout << "CoppeliaSim client app error: could not find all required functions in the CoppeliaSim library\n";
         return(0);
     }
-    std::cout << "Error: could not find or correctly load the V-REP library\n";
+    std::cout << "CoppeliaSim client app error: could not find or correctly load the CoppeliaSim library\n";
     return(-1);
 }
 
-void unloadVrepLib()
+void unloadSimLib()
 {
-    std::cout << "Unloading the V-REP library...\n";
-    unloadVrepLibrary(vrepLib);
+    std::cout << "Unloading the CoppeliaSim library...\n";
+    unloadSimLibrary(simLib);
     std::cout << "Done!\n";
 }
 
@@ -428,18 +426,18 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
         }
     }
 
-    std::cout << "Launching V-REP...\n";
+    std::cout << "Launching CoppeliaSim...\n";
     if (!uiOnly)
     {
-        if (simRunSimulatorEx("V-REP",options,simulatorInit,simulatorLoop,simulatorDeinit,stopDelay,sceneOrModelToLoad.c_str())==1)
+        if (simRunSimulatorEx("CoppeliaSim",options,simulatorInit,simulatorLoop,simulatorDeinit,stopDelay,sceneOrModelToLoad.c_str())==1)
             return(true);
     }
     else
     {
-        if (simExtLaunchUIThread("V-REP",options,sceneOrModelToLoad.c_str(),appDir)==1)
+        if (simExtLaunchUIThread("CoppeliaSim",options,sceneOrModelToLoad.c_str(),appDir)==1)
             return(true);
     }
-    std::cout << "Error: failed launching V-REP\n";
+    std::cout << "Error: failed launching CoppeliaSim\n";
     return(false);
 }
 
@@ -457,11 +455,11 @@ int main(int argc,char* argv[])
 {
     bool launchAndHandleSimThreadHere=false;
     bool wasRunning=false;
-    #ifdef WIN_VREP
+    #ifdef WIN_SIM
         timeBeginPeriod(1);
     #endif
     std::string appDir;
-    int res=loadVrepLib(argv[0],appDir);
+    int res=loadSimLib(argv[0],appDir);
     if (res==1)
     {
         if (!launchAndHandleSimThreadHere)
@@ -471,7 +469,7 @@ int main(int argc,char* argv[])
         }
         else
         {
-            #ifdef WIN_VREP
+            #ifdef WIN_SIM
                 _beginthread(simThreadStartAddress,0,0);
             #else
                 pthread_t th;
@@ -482,8 +480,8 @@ int main(int argc,char* argv[])
         }
     }
     if (res>=0)
-        unloadVrepLib();
-    #ifdef WIN_VREP
+        unloadSimLib();
+    #ifdef WIN_SIM
         timeEndPeriod(1);
     #endif
     if (!wasRunning)
