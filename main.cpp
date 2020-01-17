@@ -390,13 +390,13 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
                 {
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
-                    simSetStringParameter(sim_stringparam_additional_addonscript_firstscene,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+                    simSetStringParameter(sim_stringparam_additional_addonscript1,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
                 }
                 if ((arg[1]=='b')&&(arg.length()>2))
                 {
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
-                    simSetStringParameter(sim_stringparam_additional_addonscript,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+                    simSetStringParameter(sim_stringparam_additional_addonscript2,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
                 }
                 if ((arg[1]=='g')&&(arg.length()>2))
                 {
