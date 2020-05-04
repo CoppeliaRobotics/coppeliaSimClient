@@ -43,12 +43,12 @@
 #include <vector>
 #include <iostream>
 
-LIBRARY simLib=nullptr;
-int stopDelay;
-int options;
-std::string sceneOrModelToLoad;
+static LIBRARY simLib=nullptr;
+static int stopDelay;
+static int options;
+static std::string sceneOrModelToLoad;
 
-simVoid(*simulatorInit)()=nullptr; // use default initialization callback routine
+static simVoid(*simulatorInit)()=nullptr; // use default initialization callback routine
 /* You may provide your own initialization callback routine, e.g.:
 std::vector<int> pluginHandles;
 int loadPlugin(const char* theName,const char* theDirAndName)
@@ -224,7 +224,7 @@ void simulatorInit()
 }
 */
 
-simVoid(*simulatorDeinit)()=nullptr; // use default deinitialization callback routine
+static simVoid(*simulatorDeinit)()=nullptr; // use default deinitialization callback routine
 /* You may provide your own deinitialization callback routine, e.g.:
 void simulatorDeinit()
 {
@@ -236,7 +236,7 @@ void simulatorDeinit()
 }
 */
 
-simVoid(*simulatorLoop)()=nullptr; // use default simulation loop callback routine
+static simVoid(*simulatorLoop)()=nullptr; // use default simulation loop callback routine
 /* You may provide your own simulation loop callback routine, e.g.:
 void simulatorLoop()
 {   // The main application loop (excluding the GUI part)
@@ -386,6 +386,21 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
                 }
                 if (arg[1]=='q')
                     options|=sim_autoquit;
+                if (arg[1]=='v')
+                {
+                    std::string tmp;
+                    tmp.assign(arg.begin()+2,arg.end());
+                    int v=sim_verbosity_warnings;
+                    if (tmp.compare("none")==0)
+                        v=sim_verbosity_none;
+                    else if (tmp.compare("errors")==0)
+                        v=sim_verbosity_errors;
+                    else if (tmp.compare("infos")==0)
+                        v=sim_verbosity_infos;
+                    else if (tmp.compare("debug")==0)
+                        v=sim_verbosity_debug;
+                    simSetInt32Parameter(sim_intparam_verbosity,v);
+                }
                 if ((arg[1]=='a')&&(arg.length()>2))
                 {
                     std::string tmp;
