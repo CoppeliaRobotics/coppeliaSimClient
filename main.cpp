@@ -53,31 +53,31 @@ static simVoid(*simulatorInit)()=nullptr; // use default initialization callback
 std::vector<int> pluginHandles;
 int loadPlugin(const char* theName,const char* theDirAndName)
 {
-    std::cout << "Plugin '" << theName << "': loading...\n";
+    std::cout << "CoppeliaSim client app info: plugin '" << theName << "': loading...\n";
     int pluginHandle=simLoadModule(theDirAndName,theName);
     if (pluginHandle==-3)
     #ifdef WIN_SIM
-        std::cout << "Error with plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. Try rebuilding the plugin.\n";
+        std::cout << "CoppeliaSim client app error: plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. Try rebuilding the plugin.\n";
     #endif
     #ifdef MAC_SIM
-        std::cout << "Error with plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. Try 'otool -L pluginName.dylib' for more infos, or simply rebuild the plugin.\n";
+        std::cout << "CoppeliaSim client app error: plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. Try 'otool -L pluginName.dylib' for more infos, or simply rebuild the plugin.\n";
     #endif
     #ifdef LIN_SIM
-        std::cout << "Error with plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. For additional infos, modify the script 'libLoadErrorCheck.sh', run it and inspect the output.\n";
+        std::cout << "CoppeliaSim client app error: plugin '" << theName << "': load failed (could not load). The plugin probably couldn't load dependency libraries. For additional infos, modify the script 'libLoadErrorCheck.sh', run it and inspect the output.\n";
     #endif
 
     if (pluginHandle==-2)
-        std::cout << "Error with plugin '" << theName << "': load failed (missing entry points).\n";
+        std::cout << "CoppeliaSim client app error: plugin '" << theName << "': load failed (missing entry points).\n";
     if (pluginHandle==-1)
-        std::cout << "Error with plugin '" << theName << "': load failed (failed initialization).\n";
+        std::cout << "CoppeliaSim client app error: plugin '" << theName << "': load failed (failed initialization).\n";
     if (pluginHandle>=0)
-        std::cout << "Plugin '" << theName << "': load succeeded.\n";
+        std::cout << "CoppeliaSim client app error: plugin '" << theName << "': load succeeded.\n";
     return(pluginHandle);
 }
 
 void simulatorInit()
 {
-    std::cout << "Simulator launched.\n";
+    std::cout << "CoppeliaSim client app info: simulator launched.\n";
     std::vector<std::string> theNames;
     std::vector<std::string> theDirAndNames;
 #ifdef SIM_WITHOUT_QT_AT_ALL
@@ -232,7 +232,7 @@ void simulatorDeinit()
     for (size_t i=0;i<pluginHandles.size();i++)
         simUnloadModule(pluginHandles[i]);
     pluginHandles.clear();
-    std::cout << "Simulator ended.\n";
+    std::cout << "CoppeliaSim client app info: simulator ended.\n";
 }
 */
 
@@ -290,7 +290,7 @@ void simulatorLoop()
 
 int loadSimLib(const char* execPath,std::string& appDir)
 {
-    std::cout << "Loading the CoppeliaSim library...\n";
+    std::cout << "CoppeliaSim client app info: loading the CoppeliaSim library...\n";
     #ifdef WIN_SIM
         // Set the current path same as the application path
         char basePath[2048];
@@ -333,7 +333,7 @@ int loadSimLib(const char* execPath,std::string& appDir)
     {
         if (getSimProcAddresses(simLib)!=0)
         {
-            std::cout << "Done!\n";
+            std::cout << "CoppeliaSim client app info: done!\n";
             return(1);
         }
         std::cout << "CoppeliaSim client app error: could not find all required functions in the CoppeliaSim library\n";
@@ -345,9 +345,9 @@ int loadSimLib(const char* execPath,std::string& appDir)
 
 void unloadSimLib()
 {
-    std::cout << "Unloading the CoppeliaSim library...\n";
+    std::cout << "CoppeliaSim client app info: unloading the CoppeliaSim library...\n";
     unloadSimLibrary(simLib);
-    std::cout << "Done!\n";
+    std::cout << "CoppeliaSim client app info: done!\n";
 }
 
 bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
@@ -390,16 +390,22 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
                 {
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
-                    int v=sim_verbosity_warnings;
+                    int v=sim_verbosity_default;
                     if (tmp.compare("none")==0)
                         v=sim_verbosity_none;
                     else if (tmp.compare("errors")==0)
                         v=sim_verbosity_errors;
+                    else if (tmp.compare("warnings")==0)
+                        v=sim_verbosity_warnings;
+                    else if (tmp.compare("loadinfos")==0)
+                        v=sim_verbosity_loadinfos;
                     else if (tmp.compare("infos")==0)
                         v=sim_verbosity_infos;
                     else if (tmp.compare("debug")==0)
                         v=sim_verbosity_debug;
-                    simSetInt32Parameter(sim_intparam_verbosity,v);
+                    else if (tmp.compare("trace")==0)
+                        v=sim_verbosity_trace;
+                    simSetInt32Parameter(sim_intparam_globalverbosity,v);
                 }
                 if ((arg[1]=='a')&&(arg.length()>2))
                 {
@@ -441,7 +447,7 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
         }
     }
 
-    std::cout << "Launching CoppeliaSim...\n";
+    std::cout << "CoppeliaSim client app info: launching CoppeliaSim...\n";
     if (!uiOnly)
     {
         if (simRunSimulatorEx("CoppeliaSim",options,simulatorInit,simulatorLoop,simulatorDeinit,stopDelay,sceneOrModelToLoad.c_str())==1)
@@ -452,7 +458,7 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
         if (simExtLaunchUIThread("CoppeliaSim",options,sceneOrModelToLoad.c_str(),appDir)==1)
             return(true);
     }
-    std::cout << "Error: failed launching CoppeliaSim\n";
+    std::cout << "CoppeliaSim client app error: failed launching CoppeliaSim\n";
     return(false);
 }
 
