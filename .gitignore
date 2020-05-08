@@ -2,6 +2,7 @@
 Makefile
 Makefile.Debug
 Makefile.Release
+coppeliaSim
 *.o
 debug
 release
