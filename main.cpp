@@ -390,24 +390,7 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
                 {
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
-                    int v=sim_verbosity_default;
-                    if (tmp.compare("none")==0)
-                        v=sim_verbosity_none;
-                    else if (tmp.compare("errors")==0)
-                        v=sim_verbosity_errors;
-                    else if (tmp.compare("warnings")==0)
-                        v=sim_verbosity_warnings;
-                    else if (tmp.compare("msgs")==0)
-                        v=sim_verbosity_msgs;
-                    else if (tmp.compare("loadinfos")==0)
-                        v=sim_verbosity_loadinfos;
-                    else if (tmp.compare("infos")==0)
-                        v=sim_verbosity_infos;
-                    else if (tmp.compare("debug")==0)
-                        v=sim_verbosity_debug;
-                    else if (tmp.compare("trace")==0)
-                        v=sim_verbosity_trace;
-                    simSetInt32Parameter(sim_intparam_globalverbosity,v);
+                    simSetStringParameter(sim_stringparam_verbosity,tmp.c_str());
                 }
                 if ((arg[1]=='a')&&(arg.length()>2))
                 {
