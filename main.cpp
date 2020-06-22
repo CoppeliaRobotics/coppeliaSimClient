@@ -402,6 +402,12 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
                     tmp.assign(arg.begin()+2,arg.end());
                     simSetStringParameter(sim_stringparam_statusbarverbosity,tmp.c_str());
                 }
+                if (arg[1]=='x')
+                {
+                    std::string tmp;
+                    tmp.assign(arg.begin()+2,arg.end());
+                    simSetStringParameter(sim_stringparam_dlgverbosity,tmp.c_str());
+                }
                 if ((arg[1]=='a')&&(arg.length()>2))
                 {
                     std::string tmp;
