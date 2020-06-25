@@ -294,7 +294,8 @@ void simulatorLoop()
 
 int loadSimLib(const char* execPath,std::string& appDir)
 {
-    simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"loading the CoppeliaSim library...");
+    printf("[CoppeliaSimClient]    loading the CoppeliaSim library...\n"); // always print, do not use simAddLog
+//    simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"loading the CoppeliaSim library...");
     #ifdef WIN_SIM
         // Set the current path same as the application path
         char basePath[2048];
@@ -337,21 +338,26 @@ int loadSimLib(const char* execPath,std::string& appDir)
     {
         if (getSimProcAddresses(simLib)!=0)
         {
-            simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"done.");
+            printf("[CoppeliaSimClient]    done.\n"); // always print, do not use simAddLog
+//            simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"done.");
             return(1);
         }
-        simAddLog("CoppeliaSimClient",sim_verbosity_errors,"could not find all required functions in the CoppeliaSim library.");
+        printf("[CoppeliaSimClient]    could not find all required functions in the CoppeliaSim library.\n"); // always print, do not use simAddLog
+//        simAddLog("CoppeliaSimClient",sim_verbosity_errors,"could not find all required functions in the CoppeliaSim library.");
         return(0);
     }
-    simAddLog("CoppeliaSimClient",sim_verbosity_errors,"could not find or correctly load the CoppeliaSim library.");
+    printf("[CoppeliaSimClient]    could not find or correctly load the CoppeliaSim library.\n"); // always print, do not use simAddLog
+//    simAddLog("CoppeliaSimClient",sim_verbosity_errors,"could not find or correctly load the CoppeliaSim library.");
     return(-1);
 }
 
 void unloadSimLib()
 {
-    simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"unloading the CoppeliaSim library...");
+    printf("[CoppeliaSimClient]    unloading the CoppeliaSim library...\n"); // always print, do not use simAddLog
+//    simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"unloading the CoppeliaSim library...");
     unloadSimLibrary(simLib);
-    simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"done.");
+    printf("[CoppeliaSimClient]    done.\n"); // always print, do not use simAddLog
+//    simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"done.");
 }
 
 bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
@@ -390,6 +396,12 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
                 }
                 if (arg[1]=='q')
                     options|=sim_autoquit;
+                if (arg[1]=='c')
+                {
+                    std::string tmp;
+                    tmp.assign(arg.begin()+2,arg.end());
+                    simSetStringParameter(sim_stringparam_startupscriptstring,tmp.c_str());
+                }
                 if (arg[1]=='v')
                 {
                     std::string tmp;
