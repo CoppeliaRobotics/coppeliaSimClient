@@ -233,9 +233,11 @@ static simVoid(*simulatorDeinit)()=nullptr; // use default deinitialization call
 void simulatorDeinit()
 {
     // Unload all plugins:
-    for (size_t i=0;i<pluginHandles.size();i++)
-        simUnloadModule(pluginHandles[i]);
-    pluginHandles.clear();
+    while (pluginHandles.size()>0)
+    {
+        simUnloadModule(pluginHandles[pluginHandles.size()-1]);
+        pluginHandles.pop_back();
+    }
     simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"simulator ended.");
 }
 */
