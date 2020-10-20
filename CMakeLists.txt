@@ -5,6 +5,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_MACOSX_RPATH 1)
 
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR})
+
 set(WITH_QT true CACHE BOOL "Enable Qt")
 set(COPPELIASIM_LIBRARY NOTFOUND CACHE PATH "Path to the compiled CoppeliaSim dll/so/dylib file")
 
@@ -37,10 +39,11 @@ elseif(UNIX)
 endif()
 
 set(SOURCES main.cpp ../common/simLib.cpp)
+add_executable(coppeliaSim ${SOURCES})
 if(APPLE)
-    add_executable(coppeliaSim MACOSX_BUNDLE ${SOURCES})
-else()
-    add_executable(coppeliaSim ${SOURCES})
+    set_target_properties(coppeliaSim PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
 endif()
 target_link_libraries(coppeliaSim ${LUA_LIBRARIES})
 if(WITH_QT)
