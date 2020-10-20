@@ -16,7 +16,7 @@ if(WITH_QT)
 else()
     add_definitions(-DSIM_WITHOUT_QT_AT_ALL)
 endif()
-find_package(Lua REQUIRED)
+find_package(Lua 5.1 EXACT REQUIRED)
 
 if(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
