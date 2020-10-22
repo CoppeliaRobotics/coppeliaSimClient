@@ -72,9 +72,8 @@ if(WITH_QT)
         endif()
         get_filename_component(QT_BIN_DIR "${QMAKE_EXECUTABLE}" DIRECTORY)
     endif()
-    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${QT_BIN_DIR}")
-    find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${QT_BIN_DIR}")
     if(WIN32)
+        find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${QT_BIN_DIR}")
         add_custom_command(TARGET coppeliaSim POST_BUILD
             COMMAND "${CMAKE_COMMAND}" -E
                 env PATH="${QT_BIN_DIR}" "${WINDEPLOYQT_EXECUTABLE}"
@@ -83,6 +82,7 @@ if(WITH_QT)
         )
     endif()
     if(APPLE)
+        find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${QT_BIN_DIR}")
         add_custom_command(TARGET coppeliaSim POST_BUILD
             COMMAND "${MACDEPLOYQT_EXECUTABLE}"
                 "$<TARGET_FILE_DIR:coppeliaSim>/../.."
