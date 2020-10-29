@@ -60,7 +60,7 @@ if(WITH_QT)
     target_link_libraries(coppeliaSim Qt5::Core)
 endif()
 if(WIN32)
-    target_link_libraries(coppeliaSim -lwinmm)
+    target_link_libraries(coppeliaSim winmm)
 endif()
 
 if(NOT COPPELIASIM_LIBRARY)
