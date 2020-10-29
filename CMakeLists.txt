@@ -16,7 +16,16 @@ if(WITH_QT)
 else()
     add_definitions(-DSIM_WITHOUT_QT_AT_ALL)
 endif()
-find_package(Lua 5.1 EXACT REQUIRED)
+
+if(UNIX AND NOT APPLE)
+    # from main.cpp:28 "required to have Lua extension libraries work under Linux. Strange..."
+    set(NEED_LUA TRUE)
+endif()
+
+if(NEED_LUA)
+    find_package(Lua 5.1 EXACT REQUIRED)
+    include_directories(${LUA_INCLUDE_DIR})
+endif()
 
 if(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
@@ -28,7 +37,6 @@ else()
 endif()
 
 include_directories("../include")
-include_directories(${LUA_INCLUDE_DIR})
 
 if(WIN32)
     add_definitions(-DWIN_SIM)
@@ -45,7 +53,9 @@ if(APPLE)
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
 endif()
-target_link_libraries(coppeliaSim ${LUA_LIBRARIES})
+if(NEED_LUA)
+    target_link_libraries(coppeliaSim ${LUA_LIBRARIES})
+endif()
 if(WITH_QT)
     target_link_libraries(coppeliaSim Qt5::Core)
 endif()
