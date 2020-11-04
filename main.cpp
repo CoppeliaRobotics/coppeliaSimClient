@@ -490,18 +490,19 @@ THREAD_RET_TYPE simThreadStartAddress(void*)
 int main(int argc,char* argv[])
 {
     bool launchAndHandleSimThreadHere=false;
-    bool wasRunning=false;
     #ifdef WIN_SIM
         timeBeginPeriod(1);
     #endif
     std::string appDir;
     int res=loadSimLib(argv[0],appDir);
+    int exitCode=255;
     if (res==1)
     {
+        exitCode=254;
         if (!launchAndHandleSimThreadHere)
         {
             if (run(argc,argv,appDir.c_str(),false))
-                wasRunning=true;
+                exitCode=0;
         }
         else
         {
@@ -512,15 +513,17 @@ int main(int argc,char* argv[])
                 pthread_create(&th,nullptr,simThreadStartAddress,nullptr);
             #endif
             if (run(argc,argv,appDir.c_str(),true))
-                wasRunning=true;
+                exitCode=0;
         }
+        if (exitCode==0)
+            simGetInt32Parameter(sim_intparam_exitcode,&exitCode);
     }
     if (res>=0)
         unloadSimLib();
     #ifdef WIN_SIM
         timeEndPeriod(1);
     #endif
-    if (!wasRunning)
-        getchar();
-    return(0);
+    //if (exitCode<0)
+    //    getchar();
+    return(exitCode);
 }
