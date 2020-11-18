@@ -9,6 +9,12 @@ list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(WITH_QT true CACHE BOOL "Enable Qt")
 set(COPPELIASIM_LIBRARY NOTFOUND CACHE PATH "Path to the compiled CoppeliaSim dll/so/dylib file")
+if(WIN32)
+    set(RUN_WINDEPLOYQT OFF CACHE BOOL "Run windeployqt after build")
+endif()
+if(APPLE)
+    set(RUN_MACDEPLOYQT OFF CACHE BOOL "Run macdeployqt after build")
+endif()
 
 if(WITH_QT)
     add_definitions(-DQT_FRAMEWORK)
@@ -63,11 +69,10 @@ if(WIN32)
     target_link_libraries(coppeliaSim winmm)
 endif()
 
-if(NOT COPPELIASIM_LIBRARY)
-    message(FATAL_ERROR "COPPELIASIM_LIBRARY is not set")
-elseif(NOT EXISTS "${COPPELIASIM_LIBRARY}")
-    message(FATAL_ERROR "COPPELIASIM_LIBRARY is not a valid file (${COPPELIASIM_LIBRARY})")
-else()
+if(COPPELIASIM_LIBRARY)
+    if(NOT EXISTS "${COPPELIASIM_LIBRARY}")
+        message(FATAL_ERROR "COPPELIASIM_LIBRARY is not a valid file (${COPPELIASIM_LIBRARY})")
+    endif()
     add_custom_command(TARGET coppeliaSim POST_BUILD
         COMMAND "${CMAKE_COMMAND}" -E
         copy "${COPPELIASIM_LIBRARY}" "$<TARGET_FILE_DIR:coppeliaSim>"
@@ -82,8 +87,8 @@ if(WITH_QT)
         endif()
         get_filename_component(QT_BIN_DIR "${QMAKE_EXECUTABLE}" DIRECTORY)
     endif()
-    if(WIN32)
-        find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${QT_BIN_DIR}")
+    if(RUN_WINDEPLOYQT)
+        find_program(WINDEPLOYQT_EXECUTABLE windeployqt REQUIRED HINTS "${QT_BIN_DIR}")
         add_custom_command(TARGET coppeliaSim POST_BUILD
             COMMAND "${CMAKE_COMMAND}" -E
                 env PATH="${QT_BIN_DIR}" "${WINDEPLOYQT_EXECUTABLE}"
@@ -91,8 +96,8 @@ if(WITH_QT)
             COMMENT "Running windeployqt..."
         )
     endif()
-    if(APPLE)
-        find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${QT_BIN_DIR}")
+    if(RUN_MACDEPLOYQT)
+        find_program(MACDEPLOYQT_EXECUTABLE macdeployqt REQUIRED HINTS "${QT_BIN_DIR}")
         add_custom_command(TARGET coppeliaSim POST_BUILD
             COMMAND "${MACDEPLOYQT_EXECUTABLE}"
                 "$<TARGET_FILE_DIR:coppeliaSim>/../.."
