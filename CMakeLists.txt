@@ -9,6 +9,10 @@ list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(WITH_QT true CACHE BOOL "Enable Qt")
 set(COPPELIASIM_LIBRARY NOTFOUND CACHE PATH "Path to the compiled CoppeliaSim dll/so/dylib file")
+set(INSTALL_DIR "" CACHE PATH "If specified, it will used as install destination")
+
+message(STATUS "INSTALL_DIR: ${INSTALL_DIR}")
+
 if(WIN32)
     set(RUN_WINDEPLOYQT OFF CACHE BOOL "Run windeployqt after build")
 endif()
@@ -105,4 +109,13 @@ if(WITH_QT)
             COMMENT "Running macdeployqt..."
         )
     endif()
+endif()
+
+if(INSTALL_DIR)
+    if(NOT EXISTS "${INSTALL_DIR}")
+        message(FATAL_ERROR "'${INSTALL_DIR}' does not exist")
+    elseif(NOT IS_DIRECTORY "${INSTALL_DIR}")
+        message(FATAL_ERROR "'${INSTALL_DIR}' is not a directory")
+    endif()
+    install(TARGETS coppeliaSim DESTINATION "${INSTALL_DIR}")
 endif()
