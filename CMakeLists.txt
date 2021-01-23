@@ -60,6 +60,7 @@ elseif(APPLE)
     add_definitions(-DMAC_SIM)
 elseif(UNIX)
     add_definitions(-DLIN_SIM)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
 
 set(SOURCES main.cpp ../common/simLib.cpp)
