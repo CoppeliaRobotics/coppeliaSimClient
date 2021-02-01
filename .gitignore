@@ -7,7 +7,6 @@ coppeliaSim
 *.o
 debug
 release
-vrep
 coppeliaSim.exe
 coppeliaSim.app
 *.user
