@@ -19,6 +19,8 @@ endif()
 set(COPPELIASIM_FLAVOR "edu" CACHE STRING "Choose the CoppeliaSim flavor." FORCE)
 set_property(CACHE COPPELIASIM_FLAVOR PROPERTY STRINGS "edu" "player" "pro")
 
+set(QT_PATH "/usr/local/opt/qt" CACHE STRING "The path of Qt libraries." FORCE)
+
 set(WITH_QT true CACHE BOOL "Enable Qt")
 set(COPPELIASIM_LIBRARY NOTFOUND CACHE PATH "Path to the compiled CoppeliaSim dll/so/dylib file")
 set(INSTALL_DIR "" CACHE PATH "If specified, it will used as install destination")
@@ -132,6 +134,14 @@ if(WITH_QT)
                 "$<TARGET_FILE_DIR:coppeliaSim>/../.."
                 -always-overwrite
             COMMENT "Running macdeployqt..."
+        )
+        find_package(Python3 REQUIRED)
+        add_custom_command(TARGET coppeliaSim POST_BUILD
+            COMMAND "${Python3_EXECUTABLE}"
+                ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/installation/macdeployqtfix/macdeployqtfix.py
+                "$<TARGET_FILE:coppeliaSim>"
+                "${QT_PATH}"
+            COMMENT "Running macdeployqtfix..."
         )
     endif()
 endif()
