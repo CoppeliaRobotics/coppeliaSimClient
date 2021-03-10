@@ -42,7 +42,7 @@ endif()
 
 if(WITH_QT)
     add_definitions(-DQT_FRAMEWORK)
-    find_package(Qt5Core REQUIRED)
+    find_package(Qt5 COMPONENTS Core REQUIRED)
 else()
     add_definitions(-DSIM_WITHOUT_QT_AT_ALL)
 endif()
