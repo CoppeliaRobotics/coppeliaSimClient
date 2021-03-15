@@ -16,10 +16,10 @@ if(NOT simVariousFiles_POPULATED)
     FetchContent_Populate(simVariousFiles)
 endif()
 
-set(COPPELIASIM_FLAVOR "edu" CACHE STRING "Choose the CoppeliaSim flavor." FORCE)
+set(COPPELIASIM_FLAVOR "edu" CACHE STRING "Choose the CoppeliaSim flavor.")
 set_property(CACHE COPPELIASIM_FLAVOR PROPERTY STRINGS "edu" "player" "pro")
 
-set(QT_PATH "/usr/local/opt/qt" CACHE STRING "The path of Qt libraries." FORCE)
+set(QT_PATH "/usr/local/opt/qt" CACHE STRING "The path of Qt libraries.")
 
 set(WITH_QT true CACHE BOOL "Enable Qt")
 set(COPPELIASIM_LIBRARY NOTFOUND CACHE PATH "Path to the compiled CoppeliaSim dll/so/dylib file")
