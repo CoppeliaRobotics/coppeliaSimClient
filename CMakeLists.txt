@@ -53,7 +53,9 @@ if(UNIX AND NOT APPLE)
 endif()
 
 if(NEED_LUA)
-    find_package(Lua 5.3 EXACT REQUIRED)
+    if(NOT LUA_INCLUDE_DIR OR NOT LUA_LIBRARIES)
+        find_package(Lua 5.3 EXACT REQUIRED)
+    endif()
     include_directories(${LUA_INCLUDE_DIR})
 endif()
 
