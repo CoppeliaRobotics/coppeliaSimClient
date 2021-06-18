@@ -7,13 +7,16 @@ set(CMAKE_MACOSX_RPATH 1)
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR})
 
-include(FetchContent)
-FetchContent_Declare(simVariousFiles
-    GIT_REPOSITORY https://github.com/CoppeliaRobotics/simVariousFiles
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles
-)
-if(NOT simVariousFiles_POPULATED)
-    FetchContent_Populate(simVariousFiles)
+set(SIM_VARIOUS_FILES OFF CACHE BOOL "Take some extra files from the various files repo.")
+if(SIM_VARIOUS_FILES)
+    include(FetchContent)
+    FetchContent_Declare(simVariousFiles
+        GIT_REPOSITORY https://github.com/CoppeliaRobotics/simVariousFiles
+        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles
+    )
+    if(NOT simVariousFiles_POPULATED)
+        FetchContent_Populate(simVariousFiles)
+    endif()
 endif()
 
 set(COPPELIASIM_FLAVOR "edu" CACHE STRING "Choose the CoppeliaSim flavor.")
@@ -81,7 +84,7 @@ endif()
 
 set(SOURCES main.cpp ../common/simLib.cpp)
 add_executable(coppeliaSim ${SOURCES})
-if(APPLE)
+if(APPLE AND SIM_VARIOUS_FILES)
     set_target_properties(coppeliaSim PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/Info.plist)
@@ -123,7 +126,7 @@ if(WITH_QT)
             COMMENT "Running windeployqt..."
         )
     endif()
-    if(APPLE)
+    if(APPLE AND SIM_VARIOUS_FILES)
         add_custom_command(TARGET coppeliaSim POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/icon/macIcon_${COPPELIASIM_FLAVOR}.icns "$<TARGET_FILE_DIR:coppeliaSim>/../Resources/icon.icns"
             COMMENT "Copy icon file..."
@@ -138,13 +141,15 @@ if(WITH_QT)
             COMMENT "Running macdeployqt..."
         )
         find_package(Python3 REQUIRED)
-        add_custom_command(TARGET coppeliaSim POST_BUILD
-            COMMAND "${Python3_EXECUTABLE}"
-                ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/installation/macdeployqtfix/macdeployqtfix.py
-                "$<TARGET_FILE:coppeliaSim>"
-                "${QT_PATH}"
-            COMMENT "Running macdeployqtfix..."
-        )
+        if(SIM_VARIOUS_FILES)
+            add_custom_command(TARGET coppeliaSim POST_BUILD
+                COMMAND "${Python3_EXECUTABLE}"
+                    ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/installation/macdeployqtfix/macdeployqtfix.py
+                    "$<TARGET_FILE:coppeliaSim>"
+                    "${QT_PATH}"
+                COMMENT "Running macdeployqtfix..."
+            )
+        endif()
     endif()
 endif()
 
