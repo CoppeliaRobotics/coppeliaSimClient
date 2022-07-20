@@ -84,7 +84,7 @@ int loadSimLib(const char* execPath,std::string& appDir)
         simLib=loadSimLibrary("coppeliaSim");
     #endif
     #ifdef MAC_SIM
-        simLib=loadSimLibrary("libcoppeliaSim.dylib");
+        simLib=loadSimLibrary("@executable_path/libcoppeliaSim.dylib");
     #endif
     #ifdef LIN_SIM
         simLib=loadSimLibrary("libcoppeliaSim.so");
