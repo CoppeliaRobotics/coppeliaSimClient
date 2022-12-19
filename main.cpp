@@ -150,37 +150,37 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
                 {
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
-                    simSetStringParameter(sim_stringparam_startupscriptstring,tmp.c_str());
+                    simSetStringParam(sim_stringparam_startupscriptstring,tmp.c_str());
                 }
                 if (arg[1]=='v')
                 {
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
-                    simSetStringParameter(sim_stringparam_verbosity,tmp.c_str());
+                    simSetStringParam(sim_stringparam_verbosity,tmp.c_str());
                 }
                 if (arg[1]=='w')
                 {
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
-                    simSetStringParameter(sim_stringparam_statusbarverbosity,tmp.c_str());
+                    simSetStringParam(sim_stringparam_statusbarverbosity,tmp.c_str());
                 }
                 if (arg[1]=='x')
                 {
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
-                    simSetStringParameter(sim_stringparam_dlgverbosity,tmp.c_str());
+                    simSetStringParam(sim_stringparam_dlgverbosity,tmp.c_str());
                 }
                 if ((arg[1]=='a')&&(arg.length()>2))
                 {
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
-                    simSetStringParameter(sim_stringparam_additional_addonscript1,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+                    simSetStringParam(sim_stringparam_additional_addonscript1,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
                 }
                 if ((arg[1]=='b')&&(arg.length()>2))
                 {
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
-                    simSetStringParameter(sim_stringparam_additional_addonscript2,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+                    simSetStringParam(sim_stringparam_additional_addonscript2,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
                 }
                 if ((arg[1]=='g')&&(arg.length()>2))
                 {
@@ -188,7 +188,7 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
                     std::string tmp;
                     tmp.assign(arg.begin()+2,arg.end());
                     if (cnt<9)
-                        simSetStringParameter(sim_stringparam_app_arg1+cnt,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+                        simSetStringParam(sim_stringparam_app_arg1+cnt,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
                     cnt++;
                 }
                 if ((arg[1]=='G')&&(arg.length()>3))
@@ -198,7 +198,7 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
                     {
                         std::string key(arg.begin()+2,arg.begin()+pos);
                         std::string param(arg.begin()+pos+1,arg.end());
-                        simSetStringNamedParam(key.c_str(),param.c_str(),int(param.size()));
+                        simSetNamedStringParam(key.c_str(),param.c_str(),int(param.size()));
                     }
                 }
             }
@@ -264,7 +264,7 @@ int main(int argc,char* argv[])
                 exitCode=0;
         }
         if (exitCode==0)
-            simGetInt32Parameter(sim_intparam_exitcode,&exitCode);
+            simGetInt32Param(sim_intparam_exitcode,&exitCode);
     }
     if (res>=0)
         unloadSimLib();
