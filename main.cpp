@@ -14,7 +14,7 @@
 #ifdef SIM_WITHOUT_QT_AT_ALL
     #include <algorithm>
     #ifdef WIN_SIM
-        #include "_dirent.h"
+        #include <_dirent.h>
     #else
         #include <dirent.h>
     #endif
@@ -28,9 +28,9 @@
 // Following required to have Lua extension libraries work under Linux. Strange...
 #ifdef LIN_SIM
     extern "C" {
-        #include "lua.h"
-        #include "lualib.h"
-        #include "lauxlib.h"
+        #include <lua.h>
+        #include <lualib.h>
+        #include <lauxlib.h>
     }
     void dummyFunction()
     {
@@ -39,7 +39,7 @@
     }
 #endif
 
-#include "simLib.h"
+#include <simLib.h>
 #include <vector>
 #include <iostream>
 
