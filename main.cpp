@@ -39,7 +39,7 @@
     }
 #endif
 
-#include <simLib.h>
+#include <simLib/simLib.h>
 #include <vector>
 #include <iostream>
 

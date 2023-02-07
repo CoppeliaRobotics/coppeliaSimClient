@@ -7,6 +7,14 @@ set(CMAKE_MACOSX_RPATH 1)
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(NOT COPPELIASIM_INCLUDE_DIR)
+    if(DEFINED ENV{COPPELIASIM_ROOT_DIR})
+        set(COPPELIASIM_INCLUDE_DIR $ENV{COPPELIASIM_ROOT_DIR}/programming/include)
+    else()
+        set(COPPELIASIM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+    endif()
+endif()
+
 set(SIM_VARIOUS_FILES OFF CACHE BOOL "Take some extra files from the various files repo.")
 if(SIM_VARIOUS_FILES)
     include(FetchContent)
@@ -71,7 +79,7 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 endif()
 
-include_directories("../include")
+include_directories("${COPPELIASIM_INCLUDE_DIR}")
 
 if(WIN32)
     add_definitions(-DWIN_SIM)
@@ -82,7 +90,7 @@ elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
 
-set(SOURCES main.cpp ../common/simLib.cpp)
+set(SOURCES main.cpp "${COPPELIASIM_INCLUDE_DIR}/simLib/simLib.cpp")
 add_executable(coppeliaSim ${SOURCES})
 if(APPLE AND SIM_VARIOUS_FILES)
     set_target_properties(coppeliaSim PROPERTIES
