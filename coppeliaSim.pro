@@ -54,9 +54,9 @@ unix:!macx {
 }
 
 SOURCES += main.cpp \
-    ../include/simLib.cpp
+    ../include/simLib/simLib.cpp
 
-HEADERS += ../include/simLib.h
+HEADERS += ../include/simLib/simLib.h
 
 
 
