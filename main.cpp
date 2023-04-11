@@ -14,7 +14,7 @@
 #ifdef SIM_WITHOUT_QT_AT_ALL
     #include <algorithm>
     #ifdef WIN_SIM
-        #include <_dirent.h>
+        #include <simLib/_dirent.h>
     #else
         #include <dirent.h>
     #endif
@@ -57,6 +57,7 @@ int loadSimLib(const char* execPath,std::string& appDir)
         _fullpath(basePath,execPath,sizeof(basePath));
         std::string p(basePath);
         p.erase(p.begin()+p.find_last_of('\\')+1,p.end());
+        // SetCurrentDirectory(p.c_str());
         QDir::setCurrent(p.c_str());
     #endif
     appDir=execPath;

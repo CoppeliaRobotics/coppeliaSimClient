@@ -30,6 +30,7 @@ WITH_QT {
     }
 
     QMAKE_CXXFLAGS += -Wall
+    QMAKE_CXXFLAGS += -fvisibility=hidden
     QMAKE_CFLAGS_RELEASE += -Wall
 }
 
