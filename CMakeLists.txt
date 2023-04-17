@@ -71,7 +71,15 @@ endif()
 set(COPPELIASIM_FLAVOR "edu" CACHE STRING "Choose the CoppeliaSim flavor.")
 set_property(CACHE COPPELIASIM_FLAVOR PROPERTY STRINGS "edu" "player" "pro")
 
-set(QT_PATH "/usr/local/opt/qt" CACHE STRING "The path of Qt libraries.")
+if(APPLE)
+    if(DEFINED ENV{HOMEBREW_PREFIX})
+        set(HOMEBREW_PREFIX "$ENV{HOMEBREW_PREFIX}")
+    else()
+        set(HOMEBREW_PREFIX "/usr/local")
+    endif()
+endif()
+
+set(QT_PATH "${HOMEBREW_PREFIX}/opt/qt" CACHE STRING "The path of Qt libraries.")
 
 set(WITH_QT true CACHE BOOL "Enable Qt")
 set(COPPELIASIM_LIBRARY NOTFOUND CACHE PATH "Path to the compiled CoppeliaSim dll/so/dylib file")
