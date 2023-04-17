@@ -15,6 +15,39 @@ if(NOT COPPELIASIM_INCLUDE_DIR)
     endif()
 endif()
 
+set(COPPELIASIM_VERSION_CHECK_SRC "${CMAKE_BINARY_DIR}/sim_version_check.cpp")
+set(COPPELIASIM_VERSION_CHECK_BIN "${CMAKE_BINARY_DIR}/sim_version_check")
+file(WRITE ${COPPELIASIM_VERSION_CHECK_SRC} "
+#include <iostream>
+#include <simLib/simConst.h>
+int main() {
+    char sep = ';';
+    std::cout
+        << SIM_PROGRAM_VERSION_NB/10000 << sep
+        << SIM_PROGRAM_VERSION_NB/100%100 << sep
+        << SIM_PROGRAM_VERSION_NB%100 << sep
+        << SIM_PROGRAM_REVISION_NB << sep
+        << 0 << std::endl;
+}
+")
+try_run(COPPELIASIM_VERSION_RUN_RESULT COPPELIASIM_VERSION_COMPILE_RESULT ${COPPELIASIM_VERSION_CHECK_BIN} ${COPPELIASIM_VERSION_CHECK_SRC} CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${COPPELIASIM_INCLUDE_DIR} RUN_OUTPUT_VARIABLE COPPELIASIM_VERSION_CHECK_OUTPUT)
+if(${COPPELIASIM_VERSION_COMPILE_RESULT})
+    if(${COPPELIASIM_VERSION_RUN_RESULT} EQUAL 0)
+        list(GET COPPELIASIM_VERSION_CHECK_OUTPUT 0 COPPELIASIM_VERSION_MAJOR)
+        list(GET COPPELIASIM_VERSION_CHECK_OUTPUT 1 COPPELIASIM_VERSION_MINOR)
+        list(GET COPPELIASIM_VERSION_CHECK_OUTPUT 2 COPPELIASIM_VERSION_PATCH)
+        list(GET COPPELIASIM_VERSION_CHECK_OUTPUT 3 COPPELIASIM_REVISION)
+        set(COPPELIASIM_VERSION "${COPPELIASIM_VERSION_MAJOR}.${COPPELIASIM_VERSION_MINOR}.${COPPELIASIM_VERSION_PATCH}.${COPPELIASIM_REVISION}")
+        set(COPPELIASIM_VERSION_STR "${COPPELIASIM_VERSION_MAJOR}.${COPPELIASIM_VERSION_MINOR}.${COPPELIASIM_VERSION_PATCH} rev${COPPELIASIM_REVISION}")
+    else()
+        message(FATAL_ERROR "Failed to run CoppeliaSim version check program")
+        return()
+    endif()
+else()
+    message(FATAL_ERROR "Failed to compile CoppeliaSim version check program")
+    return()
+endif()
+
 set(SIM_VARIOUS_FILES OFF CACHE BOOL "Take some extra files from the various files repo.")
 if(SIM_VARIOUS_FILES)
     include(FetchContent)
@@ -24,6 +57,14 @@ if(SIM_VARIOUS_FILES)
     )
     if(NOT simVariousFiles_POPULATED)
         FetchContent_Populate(simVariousFiles)
+    endif()
+    if(APPLE)
+        set(CFBundleVersion "${COPPELIASIM_VERSION}")
+        set(CFBundleShortVersionString "${COPPELIASIM_VERSION_STR}")
+        configure_file(
+            ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/Info.plist.in
+            ${CMAKE_CURRENT_BINARY_DIR}/Info.plist
+        )
     endif()
 endif()
 
@@ -95,7 +136,7 @@ add_executable(coppeliaSim ${SOURCES})
 if(APPLE AND SIM_VARIOUS_FILES)
     set_target_properties(coppeliaSim PROPERTIES
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/Info.plist)
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
 endif()
 if(NEED_LUA)
     target_link_libraries(coppeliaSim ${LUA_LIBRARIES})
