@@ -111,7 +111,7 @@ void unloadSimLib()
     printf("[CoppeliaSimClient]    done.\n"); // always print, do not use simAddLog
 }
 
-bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
+bool run(int argc,char* argv[],const char* appDir)
 {
     options=sim_gui_all;
     stopDelay=0;
@@ -211,34 +211,21 @@ bool run(int argc,char* argv[],const char* appDir,bool uiOnly)
         }
     }
 
-    simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"launching CoppeliaSim...");
-    if (!uiOnly)
-    {
-        if (simRunSimulatorEx("CoppeliaSim",options,nullptr,nullptr,nullptr,stopDelay,sceneOrModelToLoad.c_str())==1)
-            return(true);
-    }
-    else
-    {
-        if (simExtLaunchUIThread("CoppeliaSim",options,sceneOrModelToLoad.c_str(),appDir)==1)
-            return(true);
-    }
-    simAddLog("CoppeliaSimClient",sim_verbosity_errors,"failed launching CoppeliaSim.");
-    return(false);
+    return(simRunGui("CoppeliaSim",options,stopDelay,sceneOrModelToLoad.c_str(),appDir)==1);
 }
 
 THREAD_RET_TYPE simThreadStartAddress(void*)
 {
-    while (!simExtCanInitSimThread());
-    simExtSimThreadInit();
-    while (!simExtGetExitRequest())
-        simExtStep(true);
-    simExtSimThreadDestroy();
+    while (!simCanInitSimThread());
+    simInitSimThread();
+    while (!simGetExitRequest())
+        simLoop(0);
+    simCleanupSimThread();
     return(THREAD_RET_VAL);
 }
 
 int main(int argc,char* argv[])
 {
-    bool launchAndHandleSimThreadHere=false;
     #ifdef WIN_SIM
         timeBeginPeriod(1);
     #endif
@@ -248,31 +235,26 @@ int main(int argc,char* argv[])
     if (res==1)
     {
         exitCode=254;
-        if (!launchAndHandleSimThreadHere)
+        #ifdef WIN_SIM
+            _beginthread(simThreadStartAddress,0,0);
+        #else
+            pthread_t th;
+            pthread_create(&th,nullptr,simThreadStartAddress,nullptr);
+        #endif
+
+        simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"launching CoppeliaSim...");
+        if (run(argc,argv,appDir.c_str()))
         {
-            if (run(argc,argv,appDir.c_str(),false))
-                exitCode=0;
+            exitCode=0;
+            simGetInt32Param(sim_intparam_exitcode,&exitCode);
         }
         else
-        {
-            #ifdef WIN_SIM
-                _beginthread(simThreadStartAddress,0,0);
-            #else
-                pthread_t th;
-                pthread_create(&th,nullptr,simThreadStartAddress,nullptr);
-            #endif
-            if (run(argc,argv,appDir.c_str(),true))
-                exitCode=0;
-        }
-        if (exitCode==0)
-            simGetInt32Param(sim_intparam_exitcode,&exitCode);
+            simAddLog("CoppeliaSimClient",sim_verbosity_errors,"failed launching CoppeliaSim.");
     }
     if (res>=0)
         unloadSimLib();
     #ifdef WIN_SIM
         timeEndPeriod(1);
     #endif
-    //if (exitCode<0)
-    //    getchar();
     return(exitCode);
 }
