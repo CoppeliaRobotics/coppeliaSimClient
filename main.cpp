@@ -84,7 +84,7 @@ void simThreadStartAddress()
         timeBeginPeriod(1);
     #endif
 
-    simInit(appDir.c_str(),0);
+    simInitialize(appDir.c_str(),0);
     bool autoStarted=false;
     int simulationRunCnt=0;
     while (!simGetExitRequest())
@@ -122,7 +122,7 @@ void simThreadStartAddress()
 
         simLoop(nullptr,0);
     }
-    simCleanup();
+    simDeinitialize();
 
     #ifdef WIN_SIM
         timeEndPeriod(1);
