@@ -7,18 +7,13 @@ CONFIG        += app_bundle
 CONFIG        += WITH_QT
 QT            -= gui
 
-WITH_QT {
-    DEFINES += QT_FRAMEWORK
-} else {
-    DEFINES += SIM_WITHOUT_QT_AT_ALL
-    QT -= core
-}
+DEFINES += QT_FRAMEWORK
 
 *-msvc* {
+    QMAKE_CXXFLAGS += /std:c++17
     QMAKE_CXXFLAGS += -O2
     QMAKE_CXXFLAGS += -W3
-}
-*-g++* {
+} else {
 
     CONFIG(debug,debug|release) {
         QMAKE_CXXFLAGS += -g -ggdb
@@ -29,6 +24,7 @@ WITH_QT {
         message( release )
     }
 
+    CONFIG += c++17
     QMAKE_CXXFLAGS += -Wall
     QMAKE_CXXFLAGS += -fvisibility=hidden
     QMAKE_CFLAGS_RELEASE += -Wall
