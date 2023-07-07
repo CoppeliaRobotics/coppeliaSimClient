@@ -81,7 +81,6 @@ endif()
 
 set(QT_PATH "${HOMEBREW_PREFIX}/opt/qt" CACHE STRING "The path of Qt libraries.")
 
-set(WITH_QT true CACHE BOOL "Enable Qt")
 set(COPPELIASIM_LIBRARY NOTFOUND CACHE PATH "Path to the compiled CoppeliaSim dll/so/dylib file")
 set(INSTALL_DIR "" CACHE PATH "If specified, it will used as install destination")
 if(INSTALL_DIR)
@@ -100,12 +99,8 @@ if(APPLE)
     set(RUN_MACDEPLOYQT OFF CACHE BOOL "Run macdeployqt after build")
 endif()
 
-if(WITH_QT)
-    add_definitions(-DQT_FRAMEWORK)
-    find_package(Qt5 COMPONENTS Core REQUIRED)
-else()
-    add_definitions(-DSIM_WITHOUT_QT_AT_ALL)
-endif()
+add_definitions(-DQT_FRAMEWORK)
+find_package(Qt5 COMPONENTS Core REQUIRED)
 
 if(UNIX AND NOT APPLE)
     # from main.cpp:28 "required to have Lua extension libraries work under Linux. Strange..."
@@ -149,9 +144,7 @@ endif()
 if(NEED_LUA)
     target_link_libraries(coppeliaSim ${LUA_LIBRARIES})
 endif()
-if(WITH_QT)
-    target_link_libraries(coppeliaSim Qt5::Core)
-endif()
+target_link_libraries(coppeliaSim Qt5::Core)
 if(WIN32)
     target_link_libraries(coppeliaSim winmm)
 endif()
@@ -170,46 +163,44 @@ if(COPPELIASIM_LIBRARY)
     )
 endif()
 
-if(WITH_QT)
-    if(NOT QT_BIN_DIR)
-        if(NOT QMAKE_EXECUTABLE)
-            get_target_property(QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
-        endif()
-        get_filename_component(QT_BIN_DIR "${QMAKE_EXECUTABLE}" DIRECTORY)
+if(NOT QT_BIN_DIR)
+    if(NOT QMAKE_EXECUTABLE)
+        get_target_property(QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
     endif()
-    if(RUN_WINDEPLOYQT)
-        find_program(WINDEPLOYQT_EXECUTABLE windeployqt REQUIRED HINTS "${QT_BIN_DIR}")
+    get_filename_component(QT_BIN_DIR "${QMAKE_EXECUTABLE}" DIRECTORY)
+endif()
+if(RUN_WINDEPLOYQT)
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt REQUIRED HINTS "${QT_BIN_DIR}")
+    add_custom_command(TARGET coppeliaSim POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E
+            env PATH="${QT_BIN_DIR}" "${WINDEPLOYQT_EXECUTABLE}"
+            "$<TARGET_FILE:coppeliaSim>"
+        COMMENT "Running windeployqt..."
+    )
+endif()
+if(APPLE AND SIM_VARIOUS_FILES)
+    add_custom_command(TARGET coppeliaSim POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/icon/macIcon_${COPPELIASIM_FLAVOR}.icns "$<TARGET_FILE_DIR:coppeliaSim>/../Resources/icon.icns"
+        COMMENT "Copy icon file..."
+    )
+endif()
+if(RUN_MACDEPLOYQT)
+    find_program(MACDEPLOYQT_EXECUTABLE macdeployqt REQUIRED HINTS "${QT_BIN_DIR}")
+    add_custom_command(TARGET coppeliaSim POST_BUILD
+        COMMAND "${MACDEPLOYQT_EXECUTABLE}"
+            "$<TARGET_FILE_DIR:coppeliaSim>/../.."
+            -always-overwrite
+        COMMENT "Running macdeployqt..."
+    )
+    find_package(Python3 REQUIRED)
+    if(SIM_VARIOUS_FILES)
         add_custom_command(TARGET coppeliaSim POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E
-                env PATH="${QT_BIN_DIR}" "${WINDEPLOYQT_EXECUTABLE}"
+            COMMAND "${Python3_EXECUTABLE}"
+                ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/installation/macdeployqtfix/macdeployqtfix.py
                 "$<TARGET_FILE:coppeliaSim>"
-            COMMENT "Running windeployqt..."
+                "${QT_PATH}"
+            COMMENT "Running macdeployqtfix..."
         )
-    endif()
-    if(APPLE AND SIM_VARIOUS_FILES)
-        add_custom_command(TARGET coppeliaSim POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/icon/macIcon_${COPPELIASIM_FLAVOR}.icns "$<TARGET_FILE_DIR:coppeliaSim>/../Resources/icon.icns"
-            COMMENT "Copy icon file..."
-        )
-    endif()
-    if(RUN_MACDEPLOYQT)
-        find_program(MACDEPLOYQT_EXECUTABLE macdeployqt REQUIRED HINTS "${QT_BIN_DIR}")
-        add_custom_command(TARGET coppeliaSim POST_BUILD
-            COMMAND "${MACDEPLOYQT_EXECUTABLE}"
-                "$<TARGET_FILE_DIR:coppeliaSim>/../.."
-                -always-overwrite
-            COMMENT "Running macdeployqt..."
-        )
-        find_package(Python3 REQUIRED)
-        if(SIM_VARIOUS_FILES)
-            add_custom_command(TARGET coppeliaSim POST_BUILD
-                COMMAND "${Python3_EXECUTABLE}"
-                    ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/installation/macdeployqtfix/macdeployqtfix.py
-                    "$<TARGET_FILE:coppeliaSim>"
-                    "${QT_PATH}"
-                COMMENT "Running macdeployqtfix..."
-            )
-        endif()
     endif()
 endif()
 
