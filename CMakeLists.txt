@@ -123,6 +123,7 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 endif()
 
+target_compile_features(simClientApplication PRIVATE cxx_std_17)
 include_directories("${COPPELIASIM_INCLUDE_DIR}")
 
 if(WIN32)
