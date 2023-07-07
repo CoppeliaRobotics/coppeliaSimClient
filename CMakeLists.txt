@@ -4,6 +4,7 @@ project(simClientApplication)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_MACOSX_RPATH 1)
+set(CMAKE_CXX_STANDARD 17)
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -123,7 +124,6 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 endif()
 
-target_compile_features(simClientApplication PRIVATE cxx_std_17)
 include_directories("${COPPELIASIM_INCLUDE_DIR}")
 
 if(WIN32)
