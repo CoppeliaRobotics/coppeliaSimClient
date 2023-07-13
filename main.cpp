@@ -1,12 +1,5 @@
 #ifdef WIN_SIM
-    #include <direct.h>
     #include <Windows.h>
-    int chdir(const char *path)
-    {
-        return _chdir(path);
-    }
-#else
-    #include <unistd.h>
 #endif
 
 #include <string>
@@ -134,7 +127,6 @@ int main(int argc,char* argv[])
     int exitCode=255;
     std::filesystem::path path(argv[0]);
     appDir=path.parent_path().string();
-    chdir(appDir.c_str());
     if (loadSimLib())
     {
         int options=sim_gui_all;
