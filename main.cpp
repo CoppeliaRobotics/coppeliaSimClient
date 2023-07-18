@@ -1,7 +1,3 @@
-#ifdef WIN_SIM
-    #include <Windows.h>
-#endif
-
 #include <string>
 #include <filesystem>
 #include <thread>
@@ -73,10 +69,6 @@ bool endsWith(const std::string& value,const std::string& ending)
 
 void simThreadStartAddress()
 {
-    #ifdef WIN_SIM
-        timeBeginPeriod(1);
-    #endif
-
     simInitialize(appDir.c_str(),0);
     bool autoStarted=false;
     int simulationRunCnt=0;
@@ -116,10 +108,6 @@ void simThreadStartAddress()
         simLoop(nullptr,0);
     }
     simDeinitialize();
-
-    #ifdef WIN_SIM
-        timeEndPeriod(1);
-    #endif
 }
 
 int main(int argc,char* argv[])
