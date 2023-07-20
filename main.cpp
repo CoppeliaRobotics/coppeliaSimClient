@@ -1,4 +1,5 @@
 #include <string>
+#include <vector>
 #include <filesystem>
 #include <thread>
 #include <simLib/simLib.h>
@@ -32,18 +33,16 @@ void unloadSimLib()
     simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"done.");
 }
 
-bool loadSimLib()
+bool loadSimLib(std::string libName)
 {
     simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"loading the CoppeliaSim library...");
-    #ifdef WIN_SIM
-        simLib=loadSimLibrary("coppeliaSim");
-    #endif
     #ifdef MAC_SIM
-        simLib=loadSimLibrary("@executable_path/libcoppeliaSim.dylib");
+        libName="@executable_path/lib"+libName+".dylib";
     #endif
     #ifdef LIN_SIM
-        simLib=loadSimLibrary("libcoppeliaSim.so");
+        libName="lib"+libName+".so";
     #endif
+    simLib=loadSimLibrary(libName.c_str());
     if (simLib!=NULL)
     {
         if (getSimProcAddresses(simLib)!=0)
@@ -115,102 +114,113 @@ int main(int argc,char* argv[])
     int exitCode=255;
     std::filesystem::path path(argv[0]);
     appDir=path.parent_path().string();
-    if (loadSimLib())
+
+    int options=sim_gui_all;
+    std::string libName("coppeliaSim");
+    std::vector<std::string> cmds;
+    for (int i=1;i<argc;i++)
     {
-        int options=sim_gui_all;
-        for (int i=1;i<argc;i++)
+        std::string arg(argv[i]);
+        if (arg[0]=='-')
         {
-            std::string arg(argv[i]);
-            if (arg[0]=='-')
+            if (arg.length()>=2)
             {
-                if (arg.length()>=2)
+                if (arg[1]=='H')
+                    libName="coppeliaSimHeadless";
+                else if (arg[1]=='h')
                 {
-                    if (arg[1]=='h')
+                    options|=sim_gui_all|sim_gui_headless;
+                    options-=sim_gui_all;
+                }
+                else if (arg[1]=='s')
+                {
+                    autoStart=true;
+                    stopDelay=0;
+                    unsigned int p=2;
+                    while (arg.length()>p)
                     {
-                        options|=sim_gui_all|sim_gui_headless;
-                        options-=sim_gui_all;
-                    }
-                    if (arg[1]=='s')
-                    {
-                        autoStart=true;
-                        stopDelay=0;
-                        unsigned int p=2;
-                        while (arg.length()>p)
+                        stopDelay*=10;
+                        if ((arg[p]>='0')&&(arg[p]<='9'))
+                            stopDelay+=arg[p]-'0';
+                        else
                         {
-                            stopDelay*=10;
-                            if ((arg[p]>='0')&&(arg[p]<='9'))
-                                stopDelay+=arg[p]-'0';
-                            else
-                            {
-                                stopDelay=0;
-                                break;
-                            }
-                            p++;
+                            stopDelay=0;
+                            break;
                         }
-                    }
-                    if (arg[1]=='q')
-                        autoQuit=true;
-                    if (arg[1]=='c')
-                    {
-                        std::string tmp;
-                        tmp.assign(arg.begin()+2,arg.end());
-                        simSetStringParam(sim_stringparam_startupscriptstring,tmp.c_str());
-                    }
-                    if (arg[1]=='v')
-                    {
-                        std::string tmp;
-                        tmp.assign(arg.begin()+2,arg.end());
-                        simSetStringParam(sim_stringparam_verbosity,tmp.c_str());
-                    }
-                    if (arg[1]=='w')
-                    {
-                        std::string tmp;
-                        tmp.assign(arg.begin()+2,arg.end());
-                        simSetStringParam(sim_stringparam_statusbarverbosity,tmp.c_str());
-                    }
-                    if (arg[1]=='x')
-                    {
-                        std::string tmp;
-                        tmp.assign(arg.begin()+2,arg.end());
-                        simSetStringParam(sim_stringparam_dlgverbosity,tmp.c_str());
-                    }
-                    if ((arg[1]=='a')&&(arg.length()>2))
-                    {
-                        std::string tmp;
-                        tmp.assign(arg.begin()+2,arg.end());
-                        simSetStringParam(sim_stringparam_additional_addonscript1,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
-                    }
-                    if ((arg[1]=='b')&&(arg.length()>2))
-                    {
-                        std::string tmp;
-                        tmp.assign(arg.begin()+2,arg.end());
-                        simSetStringParam(sim_stringparam_additional_addonscript2,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
-                    }
-                    if ((arg[1]=='g')&&(arg.length()>2))
-                    {
-                        static int cnt=0;
-                        std::string tmp;
-                        tmp.assign(arg.begin()+2,arg.end());
-                        if (cnt<9)
-                            simSetStringParam(sim_stringparam_app_arg1+cnt,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
-                        cnt++;
-                    }
-                    if ((arg[1]=='G')&&(arg.length()>3))
-                    {
-                        size_t pos=arg.find('=',3);
-                        if ( (pos!=std::string::npos)&&(pos!=arg.length()-1) )
-                        {
-                            std::string key(arg.begin()+2,arg.begin()+pos);
-                            std::string param(arg.begin()+pos+1,arg.end());
-                            simSetNamedStringParam(key.c_str(),param.c_str(),int(param.size()));
-                        }
+                        p++;
                     }
                 }
+                else if (arg[1]=='q')
+                    autoQuit=true;
+                else
+                    cmds.push_back(arg);
             }
-            else
+        }
+        else
+        {
+            if (sceneOrModel.size()==0)
+                sceneOrModel=arg;
+        }
+    }
+
+    if (loadSimLib(libName))
+    {
+        for (const auto& arg : cmds)
+        {
+            if (arg[1]=='c')
             {
-                if (sceneOrModel.size()==0)
-                    sceneOrModel=arg;
+                std::string tmp;
+                tmp.assign(arg.begin()+2,arg.end());
+                simSetStringParam(sim_stringparam_startupscriptstring,tmp.c_str());
+            }
+            if (arg[1]=='v')
+            {
+                std::string tmp;
+                tmp.assign(arg.begin()+2,arg.end());
+                simSetStringParam(sim_stringparam_verbosity,tmp.c_str());
+            }
+            if (arg[1]=='w')
+            {
+                std::string tmp;
+                tmp.assign(arg.begin()+2,arg.end());
+                simSetStringParam(sim_stringparam_statusbarverbosity,tmp.c_str());
+            }
+            if (arg[1]=='x')
+            {
+                std::string tmp;
+                tmp.assign(arg.begin()+2,arg.end());
+                simSetStringParam(sim_stringparam_dlgverbosity,tmp.c_str());
+            }
+            if ((arg[1]=='a')&&(arg.length()>2))
+            {
+                std::string tmp;
+                tmp.assign(arg.begin()+2,arg.end());
+                simSetStringParam(sim_stringparam_additional_addonscript1,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+            }
+            if ((arg[1]=='b')&&(arg.length()>2))
+            {
+                std::string tmp;
+                tmp.assign(arg.begin()+2,arg.end());
+                simSetStringParam(sim_stringparam_additional_addonscript2,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+            }
+            if ((arg[1]=='g')&&(arg.length()>2))
+            {
+                static int cnt=0;
+                std::string tmp;
+                tmp.assign(arg.begin()+2,arg.end());
+                if (cnt<9)
+                    simSetStringParam(sim_stringparam_app_arg1+cnt,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
+                cnt++;
+            }
+            if ((arg[1]=='G')&&(arg.length()>3))
+            {
+                size_t pos=arg.find('=',3);
+                if ( (pos!=std::string::npos)&&(pos!=arg.length()-1) )
+                {
+                    std::string key(arg.begin()+2,arg.begin()+pos);
+                    std::string param(arg.begin()+pos+1,arg.end());
+                    simSetNamedStringParam(key.c_str(),param.c_str(),int(param.size()));
+                }
             }
         }
 
