@@ -116,7 +116,7 @@ int main(int argc,char* argv[])
     appDir=path.parent_path().string();
 
     int options=sim_gui_all;
-    std::string libName("coppeliaSim");
+    bool trueHeadless=false;
     std::vector<std::string> cmds;
     for (int i=1;i<argc;i++)
     {
@@ -126,7 +126,7 @@ int main(int argc,char* argv[])
             if (arg.length()>=2)
             {
                 if (arg[1]=='H')
-                    libName="coppeliaSimHeadless";
+                    trueHeadless=true;
                 else if (arg[1]=='h')
                 {
                     options|=sim_gui_all|sim_gui_headless;
@@ -163,6 +163,9 @@ int main(int argc,char* argv[])
         }
     }
 
+    std::string libName("coppeliaSim");
+    if (trueHeadless)
+        libName="coppeliaSimHeadless";
     if (loadSimLib(libName))
     {
         for (const auto& arg : cmds)
@@ -225,9 +228,14 @@ int main(int argc,char* argv[])
         }
 
         simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"launching CoppeliaSim...");
-        std::thread simThread(simThreadStartAddress);
-        simRunGui(options);
-        simThread.join();
+        if (trueHeadless)
+            simThreadStartAddress();
+        else
+        {
+            std::thread simThread(simThreadStartAddress);
+            simRunGui(options);
+            simThread.join();
+        }
         exitCode=0;
         simGetInt32Param(sim_intparam_exitcode,&exitCode);
         unloadSimLib();
