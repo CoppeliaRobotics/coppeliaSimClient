@@ -101,7 +101,11 @@ if(APPLE)
 endif()
 
 add_definitions(-DQT_FRAMEWORK)
-find_package(Qt5 COMPONENTS Core REQUIRED)
+
+set(Qt Qt5 CACHE STRING "Qt version to use (e.g. Qt5)")
+set_property(CACHE Qt PROPERTY STRINGS Qt5 Qt6)
+
+find_package(${Qt} COMPONENTS Core REQUIRED)
 
 if(UNIX AND NOT APPLE)
     # from main.cpp:28 "required to have Lua extension libraries work under Linux. Strange..."
@@ -145,7 +149,7 @@ endif()
 if(NEED_LUA)
     target_link_libraries(coppeliaSim ${LUA_LIBRARIES})
 endif()
-target_link_libraries(coppeliaSim Qt5::Core)
+target_link_libraries(coppeliaSim ${Qt}::Core)
 if(WIN32)
     target_link_libraries(coppeliaSim winmm)
 endif()
@@ -166,7 +170,7 @@ endif()
 
 if(NOT QT_BIN_DIR)
     if(NOT QMAKE_EXECUTABLE)
-        get_target_property(QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
+        get_target_property(QMAKE_EXECUTABLE ${Qt}::qmake IMPORTED_LOCATION)
     endif()
     get_filename_component(QT_BIN_DIR "${QMAKE_EXECUTABLE}" DIRECTORY)
 endif()
