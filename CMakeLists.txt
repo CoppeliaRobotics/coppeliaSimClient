@@ -183,6 +183,14 @@ if(RUN_WINDEPLOYQT)
         COMMENT "Running windeployqt..."
     )
 endif()
+if(APPLE)
+    add_custom_command(TARGET coppeliaSim POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:coppeliaSim>/../Resources"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:coppeliaSim>/../MacOS"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:coppeliaSim>/../Frameworks"
+        COMMENT "Create all bundle subdirs..."
+    )
+endif()
 if(APPLE AND SIM_VARIOUS_FILES)
     add_custom_command(TARGET coppeliaSim POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/simVariousFiles/mac/icon/macIcon_${COPPELIASIM_FLAVOR}.icns "$<TARGET_FILE_DIR:coppeliaSim>/../Resources/icon.icns"
