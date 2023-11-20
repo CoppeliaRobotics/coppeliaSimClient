@@ -2,6 +2,8 @@
 #include <vector>
 #include <filesystem>
 #include <thread>
+#include <iostream>
+#include <boost/program_options.hpp>
 #include <simLib/simLib.h>
 
 // Following required to have Lua extension libraries work under Linux:
@@ -111,56 +113,77 @@ void simThreadStartAddress()
 
 int main(int argc,char* argv[])
 {
+    namespace po = boost::program_options;
+    po::options_description desc;
+    desc.add_options()
+        ("help,?", "show the help message")
+        ("headless,h", "runs CoppeliaSim in an emulated headless mode: this simply suppresses all GUI elements (e.g. doesn't open the main window, etc.), but otherwise runs normally")
+        ("true-headless,H", "runs CoppeliaSim in true headless mode (i.e. without any GUI or GUI dependencies). A display server is however still required. Instead of using library coppeliaSim, library coppeliaSimHeadless will be used")
+        ("auto-start,s", po::value<int>(&stopDelay)->default_value(0), "automatically start the simulation. If an argument is specified, simulation will automatically stop after the specified amount of milliseconds.")
+        ("auto-quit,q", "automatically quits CoppeliaSim after the first simulation run ended.")
+        ("cmd,c", po::value<std::string>(), "executes the specified script string as soon as the sandbox script is initialized.")
+        ("verbosity,v", po::value<std::string>()->default_value("loadinfos"), "sets the verbosity level, in the console. Default is loadinfos. Accepted values are: none, errors, warnings, loadinfos, scripterrors, scriptwarnings, scriptinfos, infos, debug, trace, tracelua and traceall.")
+        ("statusbar-verbosity,w", po::value<std::string>()->default_value("scriptinfos"), "sets the verbosity level, in the statusbar. Default is scriptinfos. Accepted values are: none, errors, warnings, loadinfos, scripterrors, scriptwarnings, scriptinfos, infos, debug, trace, tracelua and traceall.")
+        ("dialogs-verbosity,x", po::value<std::string>()->default_value("infos"), "sets the verbosity level, for simple dialogs. Default is infos. Accepted values are: none, errors, warnings and questions.")
+        ("addon,a", po::value<std::string>(), "loads and runs an additional add-on specified via its filename.")
+        ("addon2,b", po::value<std::string>(), "loads and runs an additional add-on specified via its filename.")
+        ("param,G", po::value<std::vector<std::string>>(), "sets a named param YYY=XXX: named parameter: YYY represents the key, XXX the value, that can be queried within CoppeliaSim with sim.getNamedStringParam.")
+        ("arg,g", po::value<std::vector<std::string>>(), "sets an optional argument that can be queried within CoppeliaSim with the sim.stringparam_app_arg1... sim.stringparam_app_arg9 parameters. The argument can be used for various custom purposes.")
+    ;
+    po::positional_options_description p;
+    p.add("scene-or-model-file", 1);
+    po::variables_map vm;
+    try
+    {
+        po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+        po::notify(vm);
+    }
+    catch(boost::program_options::unknown_option &ex)
+    {
+        std::cerr << ex.what() << std::endl;
+        return 2;
+    }
+    catch(boost::program_options::too_many_positional_options_error &ex)
+    {
+        std::cerr << ex.what() << std::endl;
+        return 2;
+    }
+    catch(boost::program_options::invalid_command_line_syntax &ex)
+    {
+        std::cerr << ex.what() << std::endl;
+        return 2;
+    }
+
+    if (vm.count("help"))
+    {
+        std::cout << desc << std::endl;
+        return 1;
+    }
+
     int exitCode=255;
     std::filesystem::path path(argv[0]);
     appDir=path.parent_path().string();
 
     int options=sim_gui_all;
     bool trueHeadless=false;
-    std::vector<std::string> cmds;
-    for (int i=1;i<argc;i++)
+
+    if (vm.count("true-headless"))
+        trueHeadless=true;
+    if (vm.count("headless"))
     {
-        std::string arg(argv[i]);
-        if (arg[0]=='-')
-        {
-            if (arg.length()>=2)
-            {
-                if (arg[1]=='H')
-                    trueHeadless=true;
-                else if (arg[1]=='h')
-                {
-                    options|=sim_gui_all|sim_gui_headless;
-                    options-=sim_gui_all;
-                }
-                else if (arg[1]=='s')
-                {
-                    autoStart=true;
-                    stopDelay=0;
-                    unsigned int p=2;
-                    while (arg.length()>p)
-                    {
-                        stopDelay*=10;
-                        if ((arg[p]>='0')&&(arg[p]<='9'))
-                            stopDelay+=arg[p]-'0';
-                        else
-                        {
-                            stopDelay=0;
-                            break;
-                        }
-                        p++;
-                    }
-                }
-                else if (arg[1]=='q')
-                    autoQuit=true;
-                else
-                    cmds.push_back(arg);
-            }
-        }
-        else
-        {
-            if (sceneOrModel.size()==0)
-                sceneOrModel=arg;
-        }
+        options|=sim_gui_all|sim_gui_headless;
+        options-=sim_gui_all;
+    }
+    if (vm.count("auto-start"))
+    {
+        autoStart=true;
+        stopDelay=vm["auto-start"].as<int>();
+    }
+    if (vm.count("auto-quit"))
+        autoQuit=true;
+    if (vm.count("scene-or-model-file"))
+    {
+        sceneOrModel=vm["scene-or-model-file"].as<std::vector<std::string>>().at(0);
     }
 
     std::string libName("coppeliaSim");
@@ -168,61 +191,38 @@ int main(int argc,char* argv[])
         libName="coppeliaSimHeadless";
     if (loadSimLib(libName))
     {
-        for (const auto& arg : cmds)
+        if (vm.count("cmd"))
+            simSetStringParam(sim_stringparam_startupscriptstring,vm["cmd"].as<std::string>().c_str());
+        if (vm.count("verbosity"))
+            simSetStringParam(sim_stringparam_verbosity,vm["verbosity"].as<std::string>().c_str());
+        if (vm.count("statusbar-verbosity"))
+            simSetStringParam(sim_stringparam_statusbarverbosity,vm["statusbar-verbosity"].as<std::string>().c_str());
+        if (vm.count("dialogs-verbosity"))
+            simSetStringParam(sim_stringparam_dlgverbosity,vm["dialogs-verbosity"].as<std::string>().c_str());
+        if (vm.count("addon"))
+            simSetStringParam(sim_stringparam_additional_addonscript1,vm["addon"].as<std::string>().c_str()); // normally, never call API functions before simRunSimulator!!
+        if (vm.count("addon2"))
+            simSetStringParam(sim_stringparam_additional_addonscript1,vm["addon2"].as<std::string>().c_str()); // normally, never call API functions before simRunSimulator!!
+        if (vm.count("arg"))
         {
-            if (arg[1]=='c')
+            auto args = vm["arg"].as<std::vector<std::string>>();
+            for (size_t i = 0; i < args.size(); i++)
             {
-                std::string tmp;
-                tmp.assign(arg.begin()+2,arg.end());
-                simSetStringParam(sim_stringparam_startupscriptstring,tmp.c_str());
+                if (i>=9) break;
+                simSetStringParam(sim_stringparam_app_arg1+i,args[i].c_str()); // normally, never call API functions before simRunSimulator!!
             }
-            if (arg[1]=='v')
+        }
+        if (vm.count("param"))
+        {
+            auto params = vm["param"].as<std::vector<std::string>>();
+            for (const std::string &param : params)
             {
-                std::string tmp;
-                tmp.assign(arg.begin()+2,arg.end());
-                simSetStringParam(sim_stringparam_verbosity,tmp.c_str());
-            }
-            if (arg[1]=='w')
-            {
-                std::string tmp;
-                tmp.assign(arg.begin()+2,arg.end());
-                simSetStringParam(sim_stringparam_statusbarverbosity,tmp.c_str());
-            }
-            if (arg[1]=='x')
-            {
-                std::string tmp;
-                tmp.assign(arg.begin()+2,arg.end());
-                simSetStringParam(sim_stringparam_dlgverbosity,tmp.c_str());
-            }
-            if ((arg[1]=='a')&&(arg.length()>2))
-            {
-                std::string tmp;
-                tmp.assign(arg.begin()+2,arg.end());
-                simSetStringParam(sim_stringparam_additional_addonscript1,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
-            }
-            if ((arg[1]=='b')&&(arg.length()>2))
-            {
-                std::string tmp;
-                tmp.assign(arg.begin()+2,arg.end());
-                simSetStringParam(sim_stringparam_additional_addonscript2,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
-            }
-            if ((arg[1]=='g')&&(arg.length()>2))
-            {
-                static int cnt=0;
-                std::string tmp;
-                tmp.assign(arg.begin()+2,arg.end());
-                if (cnt<9)
-                    simSetStringParam(sim_stringparam_app_arg1+cnt,tmp.c_str()); // normally, never call API functions before simRunSimulator!!
-                cnt++;
-            }
-            if ((arg[1]=='G')&&(arg.length()>3))
-            {
-                size_t pos=arg.find('=',3);
-                if ( (pos!=std::string::npos)&&(pos!=arg.length()-1) )
+                size_t pos=param.find('=',3);
+                if ( (pos!=std::string::npos)&&(pos!=param.length()-1) )
                 {
-                    std::string key(arg.begin()+2,arg.begin()+pos);
-                    std::string param(arg.begin()+pos+1,arg.end());
-                    simSetNamedStringParam(key.c_str(),param.c_str(),int(param.size()));
+                    std::string key(param.begin()+2,param.begin()+pos);
+                    std::string value(param.begin()+pos+1,param.end());
+                    simSetNamedStringParam(key.c_str(),value.c_str(),int(value.size()));
                 }
             }
         }

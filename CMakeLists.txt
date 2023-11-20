@@ -96,6 +96,7 @@ add_definitions(-DQT_FRAMEWORK)
 set(Qt Qt5 CACHE STRING "Qt version to use (e.g. Qt5)")
 set_property(CACHE Qt PROPERTY STRINGS Qt5 Qt6)
 
+find_package(Boost COMPONENTS program_options REQUIRED)
 find_package(${Qt} COMPONENTS Core REQUIRED)
 
 if(UNIX AND NOT APPLE)
@@ -132,6 +133,7 @@ endif()
 
 set(SOURCES main.cpp "${COPPELIASIM_INCLUDE_DIR}/simLib/simLib.cpp")
 add_executable(coppeliaSim ${SOURCES})
+target_link_libraries(coppeliaSim PRIVATE Boost::program_options)
 if(APPLE AND SIM_VARIOUS_FILES)
     set_target_properties(coppeliaSim PROPERTIES
         MACOSX_BUNDLE TRUE
