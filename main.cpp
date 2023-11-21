@@ -128,6 +128,7 @@ int main(int argc,char* argv[])
         ("addon2,b", po::value<std::string>(), "loads and runs an additional add-on specified via its filename.")
         ("param,G", po::value<std::vector<std::string>>(), "sets a named param YYY=XXX: named parameter: YYY represents the key, XXX the value, that can be queried within CoppeliaSim with sim.getNamedStringParam.")
         ("arg,g", po::value<std::vector<std::string>>(), "sets an optional argument that can be queried within CoppeliaSim with the sim.stringparam_app_arg1... sim.stringparam_app_arg9 parameters. The argument can be used for various custom purposes.")
+        ("scene-or-model-file,f", po::value<std::vector<std::string> >(), "input file");
     ;
     po::positional_options_description p;
     p.add("scene-or-model-file", 1);
