@@ -116,7 +116,6 @@ int main(int argc,char* argv[])
     namespace po = boost::program_options;
     po::options_description desc;
     desc.add_options()
-        ("help,?", "show the help message")
         ("headless,h", "runs CoppeliaSim in an emulated headless mode: this simply suppresses all GUI elements (e.g. doesn't open the main window, etc.), but otherwise runs normally")
         ("true-headless,H", "runs CoppeliaSim in true headless mode (i.e. without any GUI or GUI dependencies). A display server is however still required. Instead of using library coppeliaSim, library coppeliaSimHeadless will be used")
         ("auto-start,s", po::value<int>(), "automatically start the simulation. If an argument is specified, simulation will automatically stop after the specified amount of milliseconds.")
@@ -138,26 +137,10 @@ int main(int argc,char* argv[])
         po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
         po::notify(vm);
     }
-    catch(boost::program_options::unknown_option &ex)
+    catch(boost::program_options::error &ex)
     {
-        std::cerr << ex.what() << std::endl;
+        std::cerr << ex.what() << "\n\nusage:\n" << desc << std::endl;
         return 2;
-    }
-    catch(boost::program_options::too_many_positional_options_error &ex)
-    {
-        std::cerr << ex.what() << std::endl;
-        return 2;
-    }
-    catch(boost::program_options::invalid_command_line_syntax &ex)
-    {
-        std::cerr << ex.what() << std::endl;
-        return 2;
-    }
-
-    if (vm.count("help"))
-    {
-        std::cout << desc << std::endl;
-        return 1;
     }
 
     int exitCode=255;
