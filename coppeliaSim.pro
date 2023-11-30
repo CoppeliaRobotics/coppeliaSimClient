@@ -30,12 +30,13 @@ DEFINES += QT_FRAMEWORK
     QMAKE_CFLAGS_RELEASE += -Wall
 }
 
-
+INCLUDEPATH += $$BOOST_INCLUDEPATH
 INCLUDEPATH += "../include"
 
 win32 {
     DEFINES += WIN_SIM
     LIBS += -lwinmm
+    LIBS += -L$$BOOST_LIB_PATH
 #    RC_ICONS += coppeliaSim.ico
 }
 
@@ -43,10 +44,12 @@ macx {
     DEFINES += MAC_SIM
 }
 
-# Following required to have Lua extension libraries work under LINUX. Very strange indeed.
 unix:!macx {
+    # Following 2 required to have Lua extension libraries work under LINUX. Very strange indeed.
+    # Probably not needed anymore... make sure luarocks installs by adjusting the rpath
     INCLUDEPATH += $$LUA_INCLUDEPATH
     LIBS += $$LUA_LIBS
+    LIBS += -lboost_system
     DEFINES += LIN_SIM
 }
 
