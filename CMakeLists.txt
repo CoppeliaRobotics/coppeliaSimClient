@@ -131,7 +131,7 @@ elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
 
-set(SOURCES main.cpp "${COPPELIASIM_INCLUDE_DIR}/simLib/simLib.cpp")
+set(SOURCES sourceCode/main.cpp "${COPPELIASIM_INCLUDE_DIR}/simLib/simLib.cpp")
 add_executable(coppeliaSim ${SOURCES})
 target_link_libraries(coppeliaSim PRIVATE Boost::program_options)
 if(APPLE AND SIM_VARIOUS_FILES)

@@ -53,7 +53,7 @@ unix:!macx {
     DEFINES += LIN_SIM
 }
 
-SOURCES += main.cpp \
+SOURCES += sourceCode/main.cpp \
     ../include/simLib/simLib.cpp
 
 HEADERS += ../include/simLib/simLib.h
