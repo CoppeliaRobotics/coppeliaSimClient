@@ -201,10 +201,10 @@ int main(int argc,char* argv[])
             auto params = vm["param"].as<std::vector<std::string>>();
             for (const std::string &param : params)
             {
-                size_t pos=param.find('=',3);
+                size_t pos=param.find('=');
                 if ( (pos!=std::string::npos)&&(pos!=param.length()-1) )
                 {
-                    std::string key(param.begin()+2,param.begin()+pos);
+                    std::string key(param.begin(),param.begin()+pos);
                     std::string value(param.begin()+pos+1,param.end());
                     simSetNamedStringParam(key.c_str(),value.c_str(),int(value.size()));
                 }
