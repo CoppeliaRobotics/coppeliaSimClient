@@ -6,6 +6,10 @@
 #include <boost/program_options.hpp>
 #include <simLib/simLib.h>
 
+#if __unix__ || __linux__ || __APPLE__
+#include <unistd.h>
+#endif
+
 // Following required to have Lua extension libraries work under Linux:
 #ifdef LIN_SIM
     extern "C" {
@@ -113,6 +117,11 @@ void simThreadStartAddress()
 
 int main(int argc,char* argv[])
 {
+#if __unix__ || __linux__ || __APPLE__
+    if(argc >= 3 && (!strcmp(argv[1], "--exec-program") || !strcmp(argv[1], "-X")))
+        return execv(argv[2], &argv[2]);
+#endif
+
     namespace po = boost::program_options;
     po::options_description desc;
     desc.add_options()
