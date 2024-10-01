@@ -201,7 +201,7 @@ int main(int argc,char* argv[])
         if (vm.count("addon"))
             simSetStringParam(sim_stringparam_additional_addonscript1,vm["addon"].as<std::string>().c_str()); // normally, never call API functions before simRunSimulator!!
         if (vm.count("addon2"))
-            simSetStringParam(sim_stringparam_additional_addonscript1,vm["addon2"].as<std::string>().c_str()); // normally, never call API functions before simRunSimulator!!
+            simSetStringParam(sim_stringparam_additional_addonscript2,vm["addon2"].as<std::string>().c_str()); // normally, never call API functions before simRunSimulator!!
         if (vm.count("arg"))
         {
             auto args = vm["arg"].as<std::vector<std::string>>();
