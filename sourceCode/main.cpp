@@ -236,7 +236,6 @@ int main(int argc,char* argv[])
             simThread.join();
         }
         exitCode=0;
-        simGetInt32Param(sim_intparam_exitcode,&exitCode);
         unloadSimLib();
     }
     return(exitCode);
