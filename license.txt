@@ -8,7 +8,7 @@ under the same terms of the files in the parent directory otherwise.
 coppeliaSimClientApplication, based on vrepClientApplication from
 Coppelia Robotics AG on September 2019
 
-Copyright (C) 2006-2024 Coppelia Robotics AG
+Copyright (C) 2006-2025 Coppelia Robotics AG
 
 All rights reserved.
 
