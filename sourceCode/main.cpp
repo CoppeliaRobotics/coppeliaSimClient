@@ -143,7 +143,7 @@ int main(int argc,char* argv[])
     ;
     po::options_description desc_internal;
     desc_internal.add_options()
-        ("devmode,D", "enable developer mode")
+        ("devmode,D", po::value<std::string>()->implicit_value("true"), "set developer mode")
     ;
     po::options_description desc_all;
     desc_all.add(desc).add(desc_internal);
@@ -203,7 +203,10 @@ int main(int argc,char* argv[])
     if (loadSimLib(libName))
     {
         if (vm.count("devmode"))
-            simSetNamedStringParam("devmode","1",1);
+        {
+            std::string value = vm["devmode"].as<std::string>();
+            simSetNamedStringParam("devmode",value.c_str(),int(value.size()));
+        }
         if (vm.count("cmd"))
             simSetStringParam(sim_stringparam_startupscriptstring,vm["cmd"].as<std::string>().c_str());
         if (vm.count("verbosity"))
