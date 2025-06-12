@@ -138,20 +138,32 @@ int main(int argc,char* argv[])
         ("param,G", po::value<std::vector<std::string>>(), "sets a named param YYY=XXX: named parameter: YYY represents the key, XXX the value, that can be queried within CoppeliaSim with sim.getNamedStringParam.")
         ("arg,g", po::value<std::vector<std::string>>(), "sets an optional argument that can be queried within CoppeliaSim with the sim.stringparam_app_arg1... sim.stringparam_app_arg9 parameters. The argument can be used for various custom purposes.")
         ("options,O", po::value<int>(), "options for the GUI.")
-        ("scene-or-model-file,f", po::value<std::vector<std::string> >(), "input file");
+        ("scene-or-model-file,f", po::value<std::vector<std::string> >(), "input file")
+        ("help", "display command line usage")
     ;
+    po::options_description desc_internal;
+    desc_internal.add_options()
+        ("devmode,D", "enable developer mode")
+    ;
+    po::options_description desc_all;
+    desc_all.add(desc).add(desc_internal);
     po::positional_options_description p;
     p.add("scene-or-model-file", 1);
     po::variables_map vm;
     try
     {
-        po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+        po::store(po::command_line_parser(argc, argv).options(desc_all).positional(p).run(), vm);
         po::notify(vm);
     }
     catch(boost::program_options::error &ex)
     {
         std::cerr << ex.what() << "\n\nusage:\n" << desc << std::endl;
         return 2;
+    }
+    if(vm.count("help"))
+    {
+        std::cout << "usage:\n" << desc << std::endl;
+        return 0;
     }
 
     int exitCode=255;
@@ -190,6 +202,8 @@ int main(int argc,char* argv[])
         libName="coppeliaSimHeadless";
     if (loadSimLib(libName))
     {
+        if (vm.count("devmode"))
+            simSetNamedStringParam("devmode","1",1);
         if (vm.count("cmd"))
             simSetStringParam(sim_stringparam_startupscriptstring,vm["cmd"].as<std::string>().c_str());
         if (vm.count("verbosity"))
