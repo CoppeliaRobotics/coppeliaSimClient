@@ -4,7 +4,7 @@
 #include <thread>
 #include <iostream>
 #include <boost/program_options.hpp>
-#include <simLib/simLib.h>
+#include <simLib-2/simLib.h>
 
 #if __unix__ || __linux__ || __APPLE__
 #include <unistd.h>
@@ -205,27 +205,27 @@ int main(int argc,char* argv[])
         if (vm.count("devmode"))
         {
             std::string value = vm["devmode"].as<std::string>();
-            simSetNamedStringParam("devmode",value.c_str(),int(value.size()));
+            simSetStringProperty(sim_handle_app, "namedParam.devmode", value.c_str());
         }
         if (vm.count("cmd"))
-            simSetStringParam(sim_stringparam_startupscriptstring,vm["cmd"].as<std::string>().c_str());
+            simSetStringProperty(sim_handle_app, "startupCode", vm["cmd"].as<std::string>().c_str());
         if (vm.count("verbosity"))
-            simSetStringParam(sim_stringparam_verbosity,vm["verbosity"].as<std::string>().c_str());
+            simSetStringProperty(sim_handle_app, "consoleVerbosityStr", vm["verbosity"].as<std::string>().c_str());
         if (vm.count("statusbar-verbosity"))
-            simSetStringParam(sim_stringparam_statusbarverbosity,vm["statusbar-verbosity"].as<std::string>().c_str());
+            simSetStringProperty(sim_handle_app, "statusbarVerbosityStr", vm["statusbar-verbosity"].as<std::string>().c_str());
         if (vm.count("dialogs-verbosity"))
-            simSetStringParam(sim_stringparam_dlgverbosity,vm["dialogs-verbosity"].as<std::string>().c_str());
+            simSetStringProperty(sim_handle_app, "dialogVerbosityStr", vm["dialogs-verbosity"].as<std::string>().c_str());
         if (vm.count("addon"))
-            simSetStringParam(sim_stringparam_additional_addonscript1,vm["addon"].as<std::string>().c_str()); // normally, never call API functions before simRunSimulator!!
+            simSetStringProperty(sim_handle_app, "auxAddOn1", vm["addon"].as<std::string>().c_str()); // normally, never call API functions before simRunSimulator!!
         if (vm.count("addon2"))
-            simSetStringParam(sim_stringparam_additional_addonscript2,vm["addon2"].as<std::string>().c_str()); // normally, never call API functions before simRunSimulator!!
+            simSetStringProperty(sim_handle_app, "auxAddOn2", vm["addon2"].as<std::string>().c_str()); // normally, never call API functions before simRunSimulator!!
         if (vm.count("arg"))
         {
             auto args = vm["arg"].as<std::vector<std::string>>();
             for (size_t i = 0; i < args.size(); i++)
             {
                 if (i>=9) break;
-                simSetStringParam(sim_stringparam_app_arg1+i,args[i].c_str()); // normally, never call API functions before simRunSimulator!!
+                simSetStringProperty(sim_handle_app, (std::string("appArg") + std::to_string(i + 1)).c_str(), args[i].c_str());  // normally, never call API functions before simRunSimulator!!
             }
         }
         if (vm.count("param"))
@@ -238,7 +238,7 @@ int main(int argc,char* argv[])
                 {
                     std::string key(param.begin(),param.begin()+pos);
                     std::string value(param.begin()+pos+1,param.end());
-                    simSetNamedStringParam(key.c_str(),value.c_str(),int(value.size()));
+                    simSetStringProperty(sim_handle_app, ("namedParam." + key).c_str(), value.c_str());
                 }
             }
         }
