@@ -20,7 +20,7 @@ set(COPPELIASIM_VERSION_CHECK_SRC "${CMAKE_BINARY_DIR}/sim_version_check.cpp")
 set(COPPELIASIM_VERSION_CHECK_BIN "${CMAKE_BINARY_DIR}/sim_version_check")
 file(WRITE ${COPPELIASIM_VERSION_CHECK_SRC} "
 #include <iostream>
-#include <simLib/simConst.h>
+#include <simLib-2/simConst.h>
 int main() {
     char sep = ';';
     std::cout
@@ -131,7 +131,7 @@ elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
 
-set(SOURCES sourceCode/main.cpp "${COPPELIASIM_INCLUDE_DIR}/simLib/simLib.cpp")
+set(SOURCES sourceCode/main.cpp "${COPPELIASIM_INCLUDE_DIR}/simLib-2/simLib.cpp")
 add_executable(coppeliaSim ${SOURCES})
 target_link_libraries(coppeliaSim PRIVATE Boost::program_options)
 if(APPLE AND SIM_VARIOUS_FILES)
