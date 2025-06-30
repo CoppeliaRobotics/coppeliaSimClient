@@ -106,7 +106,7 @@ endif()
 
 if(NEED_LUA)
     if(NOT LUA_INCLUDE_DIR OR NOT LUA_LIBRARIES)
-        find_package(Lua 5.3 EXACT REQUIRED)
+        find_package(Lua 5.4 EXACT REQUIRED)
     endif()
     include_directories(${LUA_INCLUDE_DIR})
 endif()
