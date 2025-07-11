@@ -12,139 +12,122 @@
 
 // Following required to have Lua extension libraries work under Linux:
 #ifdef LIN_SIM
-    extern "C" {
-        #include <lua.h>
-        #include <lualib.h>
-        #include <lauxlib.h>
-    }
-    void dummyFunction()
-    {
-        lua_State *L;
-        L=luaL_newstate();
-    }
+extern "C"
+{
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+}
+void dummyFunction()
+{
+    lua_State* L;
+    L = luaL_newstate();
+}
 #endif
 
-static LIBRARY simLib=nullptr;
-static bool autoStart=false;
-static bool autoQuit=false;
-static int stopDelay=0;
+static LIBRARY simLib = nullptr;
+static bool autoStart = false;
+static bool autoQuit = false;
+static int stopDelay = 0;
 static std::string sceneOrModel;
 static std::string appDir;
 
 void unloadSimLib()
 {
-    simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"unloading the CoppeliaSim library...");
+    simAddLog("CoppeliaSimClient", sim_verbosity_loadinfos, "unloading the CoppeliaSim library...");
     unloadSimLibrary(simLib);
-    simLib=nullptr;
-    simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"done.");
+    simLib = nullptr;
+    simAddLog("CoppeliaSimClient", sim_verbosity_loadinfos, "done.");
 }
 
 bool loadSimLib(std::string libName)
 {
-    simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"loading the CoppeliaSim library...");
-    #ifdef MAC_SIM
-        libName="@executable_path/lib"+libName+".dylib";
-    #endif
-    #ifdef LIN_SIM
-        libName="lib"+libName+".so";
-    #endif
-    simLib=loadSimLibrary(libName.c_str());
-    if (simLib!=NULL)
+    simAddLog("CoppeliaSimClient", sim_verbosity_loadinfos, "loading the CoppeliaSim library...");
+#ifdef MAC_SIM
+    libName = "@executable_path/lib" + libName + ".dylib";
+#endif
+#ifdef LIN_SIM
+    libName = "lib" + libName + ".so";
+#endif
+    simLib = loadSimLibrary(libName.c_str());
+    if (simLib != NULL)
     {
-        if (getSimProcAddresses(simLib)!=0)
-            simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"done.");
+        if (getSimProcAddresses(simLib) != 0)
+            simAddLog("CoppeliaSimClient", sim_verbosity_loadinfos, "done.");
         else
         {
-            simAddLog("CoppeliaSimClient",sim_verbosity_errors,"could not find all required functions in the CoppeliaSim library.");
+            simAddLog("CoppeliaSimClient", sim_verbosity_errors, "could not find all required functions in the CoppeliaSim library.");
             unloadSimLib();
         }
     }
     else
-        simAddLog("CoppeliaSimClient",sim_verbosity_errors,"could not find or correctly load the CoppeliaSim library.");
-    return(simLib!=nullptr);
+        simAddLog("CoppeliaSimClient", sim_verbosity_errors, "could not find or correctly load the CoppeliaSim library.");
+    return (simLib != nullptr);
 }
 
-bool endsWith(const std::string& value,const std::string& ending)
+bool endsWith(const std::string& value, const std::string& ending)
 {
-    bool retVal=false;
-    if (ending.size()<=value.size())
-        retVal=std::equal(ending.rbegin(),ending.rend(),value.rbegin());
-    return(retVal);
+    bool retVal = false;
+    if (ending.size() <= value.size())
+        retVal = std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+    return (retVal);
 }
 
 void simThreadStartAddress()
 {
-    simInitialize(appDir.c_str(),0);
-    bool autoStarted=false;
-    int simulationRunCnt=0;
+    simInitialize(appDir.c_str(), 0);
+    bool autoStarted = false;
+    bool wasRunning = false;
     while (!simGetExitRequest())
     {
-        if (sceneOrModel.size()>0)
+        if (sceneOrModel.size() > 0)
         {
-            if ( endsWith(sceneOrModel,".ttt")||endsWith(sceneOrModel,".simscene.xml") )
+            if (endsWith(sceneOrModel, ".ttt") || endsWith(sceneOrModel, ".simscene.xml"))
             {
-                if (simLoadScene(sceneOrModel.c_str())==-1)
-                    simAddLog("CoppeliaSimClient",sim_verbosity_errors,"scene could not be opened.");
+                if (simLoadScene(sceneOrModel.c_str()) == -1)
+                    simAddLog("CoppeliaSimClient", sim_verbosity_errors, "scene could not be opened.");
             }
-            if ( endsWith(sceneOrModel,".ttm")||endsWith(sceneOrModel,".simmodel.xml"))
+            if (endsWith(sceneOrModel, ".ttm") || endsWith(sceneOrModel, ".simmodel.xml"))
             {
-                if (simLoadModel(sceneOrModel.c_str())==-1)
-                    simAddLog("CoppeliaSimClient",sim_verbosity_errors,"model could not be opened.");
+                if (simLoadModel(sceneOrModel.c_str()) == -1)
+                    simAddLog("CoppeliaSimClient", sim_verbosity_errors, "model could not be opened.");
             }
             sceneOrModel.clear();
         }
         if (autoStart)
         {
-            autoStart=false;
+            autoStart = false;
             simStartSimulation();
-            autoStarted=true;
+            autoStarted = true;
         }
-        int simState=simGetSimulationState();
-        if (simState==sim_simulation_advancing_firstafterstop)
-            simulationRunCnt++;
-        if ( (simState==sim_simulation_stopped)&&(simulationRunCnt==1)&&autoQuit )
+        int simState = simGetSimulationState();
+        if (simState != sim_simulation_stopped)
+            wasRunning = true;
+        if ((simState == sim_simulation_stopped) && wasRunning && autoQuit)
             simPostExitRequest(); // notifiy the GUI
-        if ( (stopDelay>0)&& autoStarted && (simGetSimulationTime()*1000>double(stopDelay)) )
+        if ((stopDelay > 0) && autoStarted && (simGetSimulationTime() * 1000 > double(stopDelay)))
         {
-            stopDelay=0;
+            stopDelay = 0;
             simStopSimulation();
         }
 
-        simLoop(nullptr,0);
+        simLoop(nullptr, 0);
     }
     simDeinitialize();
 }
 
-int main(int argc,char* argv[])
+int main(int argc, char* argv[])
 {
 #if __unix__ || __linux__ || __APPLE__
-    if(argc >= 3 && (!strcmp(argv[1], "--exec-program") || !strcmp(argv[1], "-X")))
+    if (argc >= 3 && (!strcmp(argv[1], "--exec-program") || !strcmp(argv[1], "-X")))
         return execv(argv[2], &argv[2]);
 #endif
 
     namespace po = boost::program_options;
     po::options_description desc;
-    desc.add_options()
-        ("headless,h", "runs CoppeliaSim in an emulated headless mode: this simply suppresses all GUI elements (e.g. doesn't open the main window, etc.), but otherwise runs normally")
-        ("true-headless,H", "runs CoppeliaSim in true headless mode (i.e. without any GUI or GUI dependencies). A display server is however still required. Instead of using library coppeliaSim, library coppeliaSimHeadless will be used")
-        ("auto-start,s", po::value<int>(), "automatically start the simulation. If an argument is specified, simulation will automatically stop after the specified amount of milliseconds.")
-        ("auto-quit,q", "automatically quits CoppeliaSim after the first simulation run ended.")
-        ("cmd,c", po::value<std::string>(), "executes the specified script string as soon as the sandbox script is initialized.")
-        ("verbosity,v", po::value<std::string>()->default_value("loadinfos"), "sets the verbosity level, in the console. Default is loadinfos. Accepted values are: none, errors, warnings, loadinfos, scripterrors, scriptwarnings, scriptinfos, infos, debug, trace, tracelua and traceall.")
-        ("statusbar-verbosity,w", po::value<std::string>()->default_value("scriptinfos"), "sets the verbosity level, in the statusbar. Default is scriptinfos. Accepted values are: none, errors, warnings, loadinfos, scripterrors, scriptwarnings, scriptinfos, infos, debug, trace, tracelua and traceall.")
-        ("dialogs-verbosity,x", po::value<std::string>()->default_value("infos"), "sets the verbosity level, for simple dialogs. Default is infos. Accepted values are: none, errors, warnings and questions.")
-        ("addon,a", po::value<std::string>(), "loads and runs an additional add-on specified via its filename.")
-        ("addon2,b", po::value<std::string>(), "loads and runs an additional add-on specified via its filename.")
-        ("param,G", po::value<std::vector<std::string>>(), "sets a named param YYY=XXX: named parameter: YYY represents the key, XXX the value, that can be queried within CoppeliaSim with sim.getNamedStringParam.")
-        ("arg,g", po::value<std::vector<std::string>>(), "sets an optional argument that can be queried within CoppeliaSim with the sim.stringparam_app_arg1... sim.stringparam_app_arg9 parameters. The argument can be used for various custom purposes.")
-        ("options,O", po::value<int>(), "options for the GUI.")
-        ("scene-or-model-file,f", po::value<std::vector<std::string> >(), "input file")
-        ("help", "display command line usage")
-    ;
+    desc.add_options()("headless,h", "runs CoppeliaSim in an emulated headless mode: this simply suppresses all GUI elements (e.g. doesn't open the main window, etc.), but otherwise runs normally")("true-headless,H", "runs CoppeliaSim in true headless mode (i.e. without any GUI or GUI dependencies). A display server is however still required. Instead of using library coppeliaSim, library coppeliaSimHeadless will be used")("auto-start,s", po::value<int>(), "automatically start the simulation. If an argument is specified, simulation will automatically stop after the specified amount of milliseconds.")("auto-quit,q", "automatically quits CoppeliaSim after the first simulation run ended.")("cmd,c", po::value<std::string>(), "executes the specified script string as soon as the sandbox script is initialized.")("verbosity,v", po::value<std::string>()->default_value("loadinfos"), "sets the verbosity level, in the console. Default is loadinfos. Accepted values are: none, errors, warnings, loadinfos, scripterrors, scriptwarnings, scriptinfos, infos, debug, trace, tracelua and traceall.")("statusbar-verbosity,w", po::value<std::string>()->default_value("scriptinfos"), "sets the verbosity level, in the statusbar. Default is scriptinfos. Accepted values are: none, errors, warnings, loadinfos, scripterrors, scriptwarnings, scriptinfos, infos, debug, trace, tracelua and traceall.")("dialogs-verbosity,x", po::value<std::string>()->default_value("infos"), "sets the verbosity level, for simple dialogs. Default is infos. Accepted values are: none, errors, warnings and questions.")("addon,a", po::value<std::string>(), "loads and runs an additional add-on specified via its filename.")("addon2,b", po::value<std::string>(), "loads and runs an additional add-on specified via its filename.")("param,G", po::value<std::vector<std::string>>(), "sets a named param YYY=XXX: named parameter: YYY represents the key, XXX the value, that can be queried within CoppeliaSim with sim.getNamedStringParam.")("arg,g", po::value<std::vector<std::string>>(), "sets an optional argument that can be queried within CoppeliaSim with the sim.stringparam_app_arg1... sim.stringparam_app_arg9 parameters. The argument can be used for various custom purposes.")("options,O", po::value<int>(), "options for the GUI.")("scene-or-model-file,f", po::value<std::vector<std::string>>(), "input file")("help", "display command line usage");
     po::options_description desc_internal;
-    desc_internal.add_options()
-        ("devmode,D", po::value<std::string>()->implicit_value("true"), "set developer mode")
-    ;
+    desc_internal.add_options()("devmode,D", po::value<std::string>()->implicit_value("true"), "set developer mode");
     po::options_description desc_all;
     desc_all.add(desc).add(desc_internal);
     po::positional_options_description p;
@@ -155,51 +138,53 @@ int main(int argc,char* argv[])
         po::store(po::command_line_parser(argc, argv).options(desc_all).positional(p).run(), vm);
         po::notify(vm);
     }
-    catch(boost::program_options::error &ex)
+    catch (boost::program_options::error& ex)
     {
-        std::cerr << ex.what() << "\n\nusage:\n" << desc << std::endl;
+        std::cerr << ex.what() << "\n\nusage:\n"
+                  << desc << std::endl;
         return 2;
     }
-    if(vm.count("help"))
+    if (vm.count("help"))
     {
-        std::cout << "usage:\n" << desc << std::endl;
+        std::cout << "usage:\n"
+                  << desc << std::endl;
         return 0;
     }
 
-    int exitCode=255;
+    int exitCode = 255;
     std::filesystem::path path(argv[0]);
-    appDir=path.parent_path().string();
+    appDir = path.parent_path().string();
 
-    int options=sim_gui_all;
-    bool trueHeadless=false;
+    int options = sim_gui_all;
+    bool trueHeadless = false;
 
     if (vm.count("true-headless"))
     {
-        trueHeadless=true;
-        options=0;
+        trueHeadless = true;
+        options = 0;
     }
     if (vm.count("headless"))
-        options=sim_gui_headless;
+        options = sim_gui_headless;
     else
     {
         if (vm.count("options") && (!trueHeadless))
-            options=vm["options"].as<int>();
+            options = vm["options"].as<int>();
     }
     if (vm.count("auto-start"))
     {
-        autoStart=true;
-        stopDelay=vm["auto-start"].as<int>();
+        autoStart = true;
+        stopDelay = vm["auto-start"].as<int>();
     }
     if (vm.count("auto-quit"))
-        autoQuit=true;
+        autoQuit = true;
     if (vm.count("scene-or-model-file"))
     {
-        sceneOrModel=vm["scene-or-model-file"].as<std::vector<std::string>>().at(0);
+        sceneOrModel = vm["scene-or-model-file"].as<std::vector<std::string>>().at(0);
     }
 
     std::string libName("coppeliaSim");
     if (trueHeadless)
-        libName="coppeliaSimHeadless";
+        libName = "coppeliaSimHeadless";
     if (loadSimLib(libName))
     {
         if (vm.count("devmode"))
@@ -224,26 +209,27 @@ int main(int argc,char* argv[])
             auto args = vm["arg"].as<std::vector<std::string>>();
             for (size_t i = 0; i < args.size(); i++)
             {
-                if (i>=9) break;
-                simSetStringProperty(sim_handle_app, (std::string("appArg") + std::to_string(i + 1)).c_str(), args[i].c_str());  // normally, never call API functions before simRunSimulator!!
+                if (i >= 9)
+                    break;
+                simSetStringProperty(sim_handle_app, (std::string("appArg") + std::to_string(i + 1)).c_str(), args[i].c_str()); // normally, never call API functions before simRunSimulator!!
             }
         }
         if (vm.count("param"))
         {
             auto params = vm["param"].as<std::vector<std::string>>();
-            for (const std::string &param : params)
+            for (const std::string& param : params)
             {
-                size_t pos=param.find('=');
-                if ( (pos!=std::string::npos)&&(pos!=param.length()-1) )
+                size_t pos = param.find('=');
+                if ((pos != std::string::npos) && (pos != param.length() - 1))
                 {
-                    std::string key(param.begin(),param.begin()+pos);
-                    std::string value(param.begin()+pos+1,param.end());
+                    std::string key(param.begin(), param.begin() + pos);
+                    std::string value(param.begin() + pos + 1, param.end());
                     simSetStringProperty(sim_handle_app, ("namedParam." + key).c_str(), value.c_str());
                 }
             }
         }
 
-        simAddLog("CoppeliaSimClient",sim_verbosity_loadinfos,"launching CoppeliaSim...");
+        simAddLog("CoppeliaSimClient", sim_verbosity_loadinfos, "launching CoppeliaSim...");
         if (trueHeadless)
             simThreadStartAddress();
         else
@@ -252,8 +238,8 @@ int main(int argc,char* argv[])
             simRunGui(options);
             simThread.join();
         }
-        exitCode=0;
+        exitCode = 0;
         unloadSimLib();
     }
-    return(exitCode);
+    return (exitCode);
 }
